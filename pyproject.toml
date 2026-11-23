@@ -4,7 +4,15 @@ version = "0.1.0"
 description = "Search API across clients and their documents for wealth advisors"
 requires-python = ">=3.13"
 dependencies = [
+    "alembic>=1.20.1",
+    "asyncpg>=0.32.0",
+    "dependency-injector>=4.49.1",
     "fastapi>=0.165.0",
+    "gunicorn>=27.0.1",
+    "pydantic-settings>=2.16.3",
+    "sqlalchemy[asyncio]>=2.1.9",
+    "uvicorn-worker>=0.4.0",
+    "uvicorn[standard]>=0.54.0",
 ]
 
 [dependency-groups]
@@ -15,6 +23,7 @@ dev = [
     "pytest>=9.2.0",
     "pytest-asyncio>=1.5.0",
     "ruff>=0.17.6",
+    "testcontainers[postgres]>=4.15.0",
 ]
 
 [tool.uv]
@@ -60,6 +69,7 @@ venv = ".venv"
 python_version = "3.13"
 strict = true
 files = ["app", "tests"]
+plugins = ["pydantic.mypy"]
 
 # --- Tests -------------------------------------------------------------------
 
