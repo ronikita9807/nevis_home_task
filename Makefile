@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install fmt lint typecheck test check up down logs
+.PHONY: help install fmt lint typecheck test check up down logs experiment
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -32,3 +32,6 @@ down: ## Stop containers (keeps the database volume)
 
 logs: ## Follow api logs
 	docker compose logs -f api
+
+experiment: ## Compare embedding models on the golden set (add ARGS=--extended for large models)
+	uv run python scripts/embedding_experiment.py $(ARGS)

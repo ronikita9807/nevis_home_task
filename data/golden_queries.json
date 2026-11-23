@@ -1,0 +1,24 @@
+{
+  "_comment": "Document search evaluation set over data/demo_corpus.json. Queries deliberately share no words with their relevant documents, so they measure semantic matching, not keyword overlap. Relevance is per advisor: only that advisor's documents are candidates.",
+  "queries": [
+    {"advisor": "alice", "query": "address proof", "relevant": ["john_utility_bill", "emily_council_tax", "sophie_tenancy"]},
+    {"advisor": "alice", "query": "identity documents", "relevant": ["john_passport", "raj_driving_licence"]},
+    {"advisor": "alice", "query": "money for when I stop working", "relevant": ["john_pension"]},
+    {"advisor": "alice", "query": "how much the client earns", "relevant": ["raj_p60"]},
+    {"advisor": "alice", "query": "where the money came from", "relevant": ["emily_business_sale", "jose_inheritance"]},
+    {"advisor": "alice", "query": "succession planning for heirs", "relevant": ["liam_will", "liam_life_policy"]},
+    {"advisor": "alice", "query": "ethical investing", "relevant": ["john_esg_note"]},
+    {"advisor": "alice", "query": "appetite for volatility", "relevant": ["emily_risk_profile"]},
+    {"advisor": "alice", "query": "borrowing to buy a house", "relevant": ["raj_mortgage_offer"]},
+    {"advisor": "alice", "query": "sheltered savings allowance", "relevant": ["sophie_isa"]},
+    {"advisor": "alice", "query": "rental contract", "relevant": ["sophie_tenancy"]},
+    {"advisor": "alice", "query": "someone to manage finances if I become incapacitated", "relevant": ["liam_lpa"]},
+    {"advisor": "alice", "query": "justification for the advice given", "relevant": ["emily_suitability"]},
+    {"advisor": "alice", "query": "what was discussed with the client last summer", "relevant": ["john_annual_review"]},
+    {"advisor": "alice", "query": "insurance protection for family", "relevant": ["liam_life_policy"]},
+    {"advisor": "alice", "query": "cash from selling a company", "relevant": ["emily_business_sale"]},
+    {"advisor": "bob", "query": "combining old retirement pots", "relevant": ["john_bob_workplace_pension"]},
+    {"advisor": "bob", "query": "freelance earnings assessment", "relevant": ["hannah_sa302"]},
+    {"advisor": "bob", "query": "children's education costs", "relevant": ["hannah_school_fees"]}
+  ]
+}
