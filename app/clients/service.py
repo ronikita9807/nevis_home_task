@@ -31,3 +31,8 @@ class ClientsService:
         async with self._uow_factory() as uow:
             client = await uow.clients.get(advisor_id, client_id)
         return ClientDTO.from_domain(client)
+
+    async def ensure_client_exists(self, advisor_id: uuid.UUID, client_id: uuid.UUID) -> None:
+        """Raise `ClientNotFoundError` unless the advisor owns the client."""
+        async with self._uow_factory() as uow:
+            await uow.clients.get(advisor_id, client_id)
