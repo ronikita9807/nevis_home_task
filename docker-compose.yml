@@ -32,6 +32,9 @@ services:
       # Each worker loads the model; cap ONNX threads so workers do not fight over cores.
       EMBEDDING_THREADS: 2
       # API_KEY is intentionally unset locally: the service key is checked only when set.
+      # Opt-in LLM summaries: export ANTHROPIC_API_KEY before `docker compose up`. Empty means
+      # extractive summaries only, and no document text leaves the service.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:

@@ -369,6 +369,81 @@
         }
       }
     },
+    "/documents/{document_id}/summary": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Get a short summary of a document",
+        "description": "Return a 2-3 sentence summary of one of the calling advisor's documents.\n\nWritten by Claude when the server is configured with ANTHROPIC_API_KEY (`method: llm`),\notherwise - or if the model fails or times out - the most representative sentences of the\ndocument are used (`method: extractive`). Computed on the first request, then cached.",
+        "operationId": "get_document_summary_documents__document_id__summary_get",
+        "security": [
+          {
+            "ServiceKey": []
+          },
+          {
+            "AdvisorId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/search": {
       "get": {
         "tags": [
@@ -919,6 +994,38 @@
           "status"
         ],
         "title": "StatusDTO"
+      },
+      "SummaryDTO": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Document Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "method": {
+            "$ref": "#/components/schemas/SummaryMethod"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "summary",
+          "method"
+        ],
+        "title": "SummaryDTO",
+        "description": "Short summary of a document and how it was produced."
+      },
+      "SummaryMethod": {
+        "type": "string",
+        "enum": [
+          "llm",
+          "extractive"
+        ],
+        "title": "SummaryMethod"
       }
     },
     "securitySchemes": {

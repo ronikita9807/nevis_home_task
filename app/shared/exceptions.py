@@ -32,3 +32,7 @@ class UnauthorizedError(AppError):
 
 class ServiceUnavailableError(AppError):
     code = "service_unavailable"
+
+
+class ExternalServiceError(AppError):
+    code = "external_service_error"
