@@ -10,8 +10,12 @@ from alembic.config import Config
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from pydantic import PostgresDsn
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.main import create_app
+from app.shared.db import Base
 from app.shared.settings import Settings
 
 POSTGRES_IMAGE = "pgvector/pgvector:0.8.2-pg17"
@@ -47,8 +51,19 @@ def migrated_database_url(database_url: str) -> str:
 
 
 @pytest.fixture
-def settings(migrated_database_url: str) -> Settings:
-    return Settings(database_url=PostgresDsn(migrated_database_url))
+async def clean_database_url(migrated_database_url: str) -> str:
+    """The migrated database with every table emptied: tests do not see each other's rows."""
+    tables = ", ".join(table.name for table in Base.metadata.sorted_tables)
+    engine = create_async_engine(migrated_database_url, poolclass=NullPool)
+    async with engine.begin() as connection:
+        await connection.execute(text(f"TRUNCATE {tables} CASCADE"))
+    await engine.dispose()
+    return migrated_database_url
+
+
+@pytest.fixture
+def settings(clean_database_url: str) -> Settings:
+    return Settings(database_url=PostgresDsn(clean_database_url))
 
 
 @pytest.fixture
