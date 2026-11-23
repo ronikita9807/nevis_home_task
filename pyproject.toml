@@ -72,7 +72,7 @@ venv = ".venv"
 [tool.mypy]
 python_version = "3.13"
 strict = true
-files = ["app", "tests"]
+files = ["app", "tests", "scripts"]
 plugins = ["pydantic.mypy"]
 
 # --- Tests -------------------------------------------------------------------

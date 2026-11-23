@@ -125,7 +125,7 @@ def load_corpus() -> tuple[list[Document], list[Query]]:
 def embed(model: TextEmbedding, texts: list[str]) -> list[Vector]:
     # Normalise explicitly: not every model returns unit vectors (e.g. nomic), and the dot
     # product of unit vectors is the cosine similarity used everywhere below.
-    return [vector / np.linalg.norm(vector) for vector in model.embed(texts)]
+    return [(vector / np.linalg.norm(vector)).astype(np.float32) for vector in model.embed(texts)]
 
 
 def evaluate(variant: Variant, documents: list[Document], queries: list[Query]) -> Result:
