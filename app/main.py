@@ -9,8 +9,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.clients import api as clients_api
 from app.containers import ApplicationContainer
-from app.shared import health
+from app.shared import health, security
 from app.shared.observability import RequestContextMiddleware, configure_logging
 from app.shared.problems import register_problem_handlers
 from app.shared.settings import Settings, load_settings
@@ -22,8 +23,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings.log_level)
 
     container = ApplicationContainer()
-    container.config.from_dict(settings.model_dump(mode="json"))
-    container.wire(modules=[health])
+    container.config.from_dict(settings.model_dump(mode="json", exclude={"api_key"}))
+    # Passed separately: a JSON dump masks secrets as "**********".
+    api_key = settings.api_key.get_secret_value() if settings.api_key else None
+    container.config.api_key.from_value(api_key)
+    container.wire(modules=[health, security, clients_api])
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
@@ -36,4 +40,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(RequestContextMiddleware)
     register_problem_handlers(app)
     app.include_router(health.router)
+    app.include_router(clients_api.router)
     return app

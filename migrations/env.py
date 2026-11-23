@@ -16,6 +16,8 @@ if config.config_file_name is not None and config.attributes.get("configure_logg
     fileConfig(config.config_file_name)
 
 # ORM modules must be imported here so that autogenerate sees their tables.
+import app.clients.infra.orm  # noqa: E402, F401
+
 target_metadata = Base.metadata
 
 

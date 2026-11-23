@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from sqlalchemy import MetaData, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -58,3 +59,21 @@ class Database:
 
     async def dispose(self) -> None:
         await self._engine.dispose()
+
+
+UNIQUE_VIOLATION = "23505"
+FOREIGN_KEY_VIOLATION = "23503"
+
+
+def violated_constraint(exc: IntegrityError, sqlstate: str) -> str | None:
+    """Name of the constraint behind a Postgres integrity error of the given SQLSTATE."""
+    # asyncpg's exception (with `sqlstate` and `constraint_name`) is the DBAPI error's cause.
+    driver_error = exc.orig.__cause__ if exc.orig is not None else None
+    if getattr(driver_error, "sqlstate", None) != sqlstate:
+        return None
+    name = getattr(driver_error, "constraint_name", None)
+    return name if isinstance(name, str) else None
+
+
+def is_unique_violation(exc: IntegrityError, constraint: str) -> bool:
+    return violated_constraint(exc, UNIQUE_VIOLATION) == constraint
