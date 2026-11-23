@@ -7,6 +7,7 @@ from sqlalchemy import (
     CheckConstraint,
     ColumnElement,
     DateTime,
+    Index,
     String,
     Text,
     UniqueConstraint,
@@ -27,6 +28,16 @@ class ClientRow(Base):
         # Target of the composite FK from documents: a document's owner is its client's owner.
         UniqueConstraint("id", "advisor_id"),
         CheckConstraint("email = lower(email)", name="email_lowercase"),
+        # Trigram indexes for search: substring (ILIKE) and typo-tolerant (<%) matching.
+        *(
+            Index(
+                f"ix_clients_{column}_trgm",
+                column,
+                postgresql_using="gin",
+                postgresql_ops={column: "gin_trgm_ops"},
+            )
+            for column in ("email", "first_name", "last_name", "description")
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
