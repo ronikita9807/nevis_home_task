@@ -14,6 +14,22 @@ Python 3.13 · FastAPI · PostgreSQL 17 with `pgvector` and `pg_trgm` · local e
 
 ---
 
+## Assignment coverage
+
+| Requirement | Where |
+|---|---|
+| Find clients by email / name / description (`NevisWealth`) | [How search works → Clients](#clients), [examples](#example-searches) |
+| Find documents by similar terms (`address proof` → `utility bill`) | [How search works → Documents](#documents), [quality](#quality) |
+| Optional: quick summary of a document | `GET /documents/{id}/summary`, [API](#api) |
+| The spec's endpoints, REST conventions, proper HTTP codes | [API](#api) — request/response bodies as specified, extensions are additive |
+| API documentation | Swagger UI at `/docs`, [`docs/openapi.json`](docs/openapi.json) |
+| docker-compose | [Quickstart](#quickstart) |
+| Tests for core logic and edge cases | [Development](#development) — 132 tests, CI on every PR |
+| README with setup and example queries/responses | this file |
+| Decisions and trade-offs | [Decisions & trade-offs](#decisions--trade-offs), [Assumptions & open questions](#assumptions--open-questions) |
+
+---
+
 ## Quickstart
 
 Requirements: Docker with Compose v2.
@@ -245,9 +261,10 @@ Modules by domain, each with a framework-free core and an `infra/` layer (ports 
 ```
 app/
   clients/     domain, command, DTO, ports, service, api, infra/ (ORM, mappers, repository)
-  documents/   + chunking, Embedder port, fastembed adapter
+  documents/   + chunking, summaries (extractive, Claude adapter)
   search/      read side: thesaurus, ranking (pure), SQL queries, service, api
-  shared/      settings, database, errors (RFC 9457), security, logging, health
+  shared/      settings, database, errors (RFC 9457), security, logging, health,
+               Embedder port + fastembed adapter (used by clients, documents, search)
   containers.py  dependency injection: the only place ports meet implementations
 migrations/    Alembic (pgvector, pg_trgm, tables, indexes)
 ```
@@ -268,7 +285,7 @@ migrations/    Alembic (pgvector, pg_trgm, tables, indexes)
 | Decision | Why | Cost |
 |---|---|---|
 | PostgreSQL + `pgvector` + `pg_trgm`, no separate search engine | one store for data, vectors, full-text and fuzzy search; transactional; enough for millions of chunks | no distributed scaling |
-| Local `bge-small-en-v1.5` (ONNX, no torch) | runs with no keys/network; within noise of models 10–18× larger on the golden set; 517 MB image with the model baked in | lower quality than hosted embeddings |
+| Local `bge-small-en-v1.5` (ONNX, no torch) | runs with no keys/network; within noise of models 10–18× larger on the golden set; ~535 MB image with the model baked in | lower quality than hosted embeddings |
 | Domain thesaurus in the keyword channel | the domain fact *utility bill = proof of address* is unknown to every local model tested | a curated list to maintain |
 | Weighted RRF (keyword 2×) | ranks, not incomparable raw scores; keyword hits are precise, semantic top hits are noisy | weights are a judgement, validated on the golden set |
 | No relevance threshold, only a noise floor (0.5) | relevant/irrelevant similarities overlap; the floor removes noise without losing recall (measured) | broad queries may show loosely related documents |
