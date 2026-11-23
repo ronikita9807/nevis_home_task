@@ -4,6 +4,7 @@ import asyncio
 import logging
 import time
 from collections.abc import Sequence
+from functools import lru_cache
 
 import numpy as np
 from fastembed import TextEmbedding
@@ -18,6 +19,9 @@ QUERY_PREFIXES: dict[str, str] = {
     "BAAI/bge-base-en-v1.5": _BGE_QUERY_PREFIX,
     "BAAI/bge-large-en-v1.5": _BGE_QUERY_PREFIX,
 }
+
+
+QUERY_CACHE_SIZE = 1024
 
 
 class FastEmbedEmbedder:
@@ -44,6 +48,8 @@ class FastEmbedEmbedder:
         self._model = TextEmbedding(model_name, cache_dir=cache_dir, threads=threads)
         self._model_name = model_name
         self._query_prefix = QUERY_PREFIXES.get(model_name, "")
+        # Repeated searches (same normalised query) skip inference entirely.
+        self._embed_query_cached = lru_cache(maxsize=QUERY_CACHE_SIZE)(self._embed_query)
         logger.info(
             "Embedding model loaded model=%s seconds=%.1f",
             model_name,
@@ -67,8 +73,11 @@ class FastEmbedEmbedder:
         return await asyncio.to_thread(self._embed, list(texts))
 
     async def embed_query(self, text: str) -> list[float]:
-        vectors = await asyncio.to_thread(self._embed, [self._query_prefix + text])
-        return vectors[0]
+        return list(await asyncio.to_thread(self._embed_query_cached, text))
+
+    def _embed_query(self, text: str) -> tuple[float, ...]:
+        # A tuple: cached values must be immutable.
+        return tuple(self._embed([self._query_prefix + text])[0])
 
     def _embed(self, texts: list[str]) -> list[list[float]]:
         # Unit length, so that cosine similarity is well defined whatever the model returns.

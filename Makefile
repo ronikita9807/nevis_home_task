@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install fmt lint typecheck test check up down logs experiment
+.PHONY: help install fmt lint typecheck test check up down logs experiment eval
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -35,3 +35,6 @@ logs: ## Follow api logs
 
 experiment: ## Compare embedding models on the golden set (add ARGS=--extended for large models)
 	uv run python scripts/embedding_experiment.py $(ARGS)
+
+eval: ## Search quality on the golden set through the whole pipeline (recall@5, MRR)
+	uv run pytest tests/search/test_golden_set.py -q -s -k recall

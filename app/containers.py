@@ -7,7 +7,7 @@ from app.clients.service import ClientsService
 from app.documents.infra.embedder import FastEmbedEmbedder
 from app.documents.infra.repository import PostgreSQLDocumentsUnitOfWork
 from app.documents.service import DocumentsService
-from app.search.infra.queries import PostgreSQLClientSearchQuery
+from app.search.infra.queries import PostgreSQLClientSearchQuery, PostgreSQLDocumentSearchQuery
 from app.search.service import SearchService
 from app.shared.db import Database
 
@@ -44,4 +44,10 @@ class ApplicationContainer(containers.DeclarativeContainer):
     )
 
     client_search_query = providers.Factory(PostgreSQLClientSearchQuery, database=database)
-    search_service = providers.Factory(SearchService, clients=client_search_query)
+    document_search_query = providers.Factory(PostgreSQLDocumentSearchQuery, database=database)
+    search_service = providers.Factory(
+        SearchService,
+        clients=client_search_query,
+        documents=document_search_query,
+        embedder=embedder,
+    )
