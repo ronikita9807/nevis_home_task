@@ -9,10 +9,7 @@ from typing import Annotated, Self
 from pydantic import Field, StringConstraints
 
 from app.shared.domain import BaseDomainModel
-
-# Fixed by the embedding model (bge-small-en-v1.5) and the `vector(384)` column.
-# Changing the model to one of another size needs a migration and a re-index.
-EMBEDDING_DIMENSION = 384
+from app.shared.embeddings import EMBEDDING_DIMENSION
 
 MAX_TITLE_LENGTH = 300
 # Characters. Indexing is synchronous (~20 s at this size on a laptop CPU); larger documents

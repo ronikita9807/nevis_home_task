@@ -5,13 +5,13 @@ from dependency_injector import containers, providers
 from app.clients.infra.repository import PostgreSQLClientsUnitOfWork
 from app.clients.service import ClientsService
 from app.documents.infra.claude_summarizer import build_claude_summarizer
-from app.documents.infra.embedder import FastEmbedEmbedder
 from app.documents.infra.repository import PostgreSQLDocumentsUnitOfWork
 from app.documents.service import DocumentsService
 from app.documents.summary import ExtractiveSummarizer, SummaryService
 from app.search.infra.queries import PostgreSQLClientSearchQuery, PostgreSQLDocumentSearchQuery
 from app.search.service import SearchService
 from app.shared.db import Database
+from app.shared.fastembed_embedder import FastEmbedEmbedder
 
 
 class ApplicationContainer(containers.DeclarativeContainer):
@@ -35,7 +35,9 @@ class ApplicationContainer(containers.DeclarativeContainer):
     )
 
     clients_uow = providers.Factory(PostgreSQLClientsUnitOfWork, database=database)
-    clients_service = providers.Factory(ClientsService, uow_factory=clients_uow.provider)
+    clients_service = providers.Factory(
+        ClientsService, uow_factory=clients_uow.provider, embedder=embedder
+    )
 
     documents_uow = providers.Factory(PostgreSQLDocumentsUnitOfWork, database=database)
     documents_service = providers.Factory(

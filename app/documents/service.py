@@ -7,7 +7,8 @@ from app.documents.chunking import split_into_chunks
 from app.documents.commands import CreateDocumentCommand
 from app.documents.domain import Document, DocumentChunk
 from app.documents.dto import DocumentDTO
-from app.documents.ports import ClientDirectory, DocumentsUnitOfWork, Embedder
+from app.documents.ports import ClientDirectory, DocumentsUnitOfWork
+from app.shared.embeddings import Embedder
 
 
 class DocumentsService:

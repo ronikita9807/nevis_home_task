@@ -5,6 +5,10 @@ import uuid
 from dataclasses import dataclass
 
 from app.search.domain import (
+    CLIENT_SEMANTIC_BAND,
+    CLIENT_SEMANTIC_FLOOR,
+    CLIENT_SEMANTIC_TOP,
+    CLIENT_SEMANTIC_WEIGHT,
     KEYWORD_WEIGHT,
     MIN_FUZZY_TOKEN_LENGTH,
     RRF_K,
@@ -14,6 +18,7 @@ from app.search.domain import (
     ClientField,
     KeywordMatch,
     MatchChannel,
+    SemanticClientMatch,
     SemanticMatch,
 )
 
@@ -30,6 +35,7 @@ class RankedClient:
     candidate: ClientCandidate
     score: float
     matched_fields: list[ClientField]
+    channels: tuple[MatchChannel, ...] = (MatchChannel.KEYWORD,)
 
 
 def rank_clients(query: str, candidates: list[ClientCandidate]) -> list[RankedClient]:
@@ -43,6 +49,44 @@ def rank_clients(query: str, candidates: list[ClientCandidate]) -> list[RankedCl
     ranked = [r for c in candidates if (r := _score_client(query, c)) is not None]
     return sorted(
         ranked,
+        key=lambda r: (-r.score, r.candidate.last_name, r.candidate.first_name, r.candidate.id),
+    )
+
+
+def merge_semantic_clients(
+    ranked: list[RankedClient], semantic: list[SemanticClientMatch]
+) -> list[RankedClient]:
+    """Add clients found by the meaning of their description to the word matches.
+
+    Only clients above CLIENT_SEMANTIC_FLOOR and within CLIENT_SEMANTIC_BAND of the best one
+    count (at most CLIENT_SEMANTIC_TOP). A client found both ways keeps its word-match score;
+    a meaning-only match scores CLIENT_SEMANTIC_WEIGHT x similarity, below any word match.
+    """
+    accepted = [m for m in semantic if m.similarity >= CLIENT_SEMANTIC_FLOOR]
+    if accepted:
+        best = max(m.similarity for m in accepted)
+        accepted = [m for m in accepted if m.similarity >= best - CLIENT_SEMANTIC_BAND]
+    accepted = sorted(accepted, key=lambda m: -m.similarity)[:CLIENT_SEMANTIC_TOP]
+
+    by_id = {r.candidate.id: r for r in ranked}
+    for match in accepted:
+        existing = by_id.get(match.candidate.id)
+        if existing is not None:
+            by_id[match.candidate.id] = RankedClient(
+                candidate=existing.candidate,
+                score=existing.score,
+                matched_fields=existing.matched_fields,
+                channels=(MatchChannel.KEYWORD, MatchChannel.SEMANTIC),
+            )
+        else:
+            by_id[match.candidate.id] = RankedClient(
+                candidate=match.candidate,
+                score=round(CLIENT_SEMANTIC_WEIGHT * match.similarity, 4),
+                matched_fields=[ClientField.DESCRIPTION],
+                channels=(MatchChannel.SEMANTIC,),
+            )
+    return sorted(
+        by_id.values(),
         key=lambda r: (-r.score, r.candidate.last_name, r.candidate.first_name, r.candidate.id),
     )
 

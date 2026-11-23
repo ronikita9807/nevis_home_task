@@ -4,7 +4,13 @@ import uuid
 from collections.abc import Sequence
 from typing import Protocol
 
-from app.search.domain import ClientCandidate, DocumentDetails, KeywordMatch, SemanticMatch
+from app.search.domain import (
+    ClientCandidate,
+    DocumentDetails,
+    KeywordMatch,
+    SemanticClientMatch,
+    SemanticMatch,
+)
 
 
 class ClientSearchQuery(Protocol):
@@ -15,6 +21,12 @@ class ClientSearchQuery(Protocol):
 
         `query` is normalised (lower-case, single spaces). At most `limit` candidates.
         """
+        ...
+
+    async def semantic_clients(
+        self, advisor_id: uuid.UUID, query_vector: Sequence[float], limit: int
+    ) -> list[SemanticClientMatch]:
+        """The advisor's clients whose description is nearest to the query, best first."""
         ...
 
 

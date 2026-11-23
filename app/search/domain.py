@@ -19,6 +19,18 @@ MIN_FUZZY_TOKEN_LENGTH = 4
 # Measured: "jonh"~"John" 0.40, "mueller"~"Müller" 0.375 pass; "emily"~"Emma" 0.33 does not.
 FUZZY_THRESHOLD = 0.35
 
+# --- Clients by meaning of their description ------------------------------------------
+# Measured on the demo descriptions (stage 11): name-like queries ("NevisWealth", "Jonh",
+# "Raj Patel") reach at most 0.45 similarity, while meaning queries put the right client
+# first at 0.50-0.65 but often with a runner-up close behind. Hence a floor against noise and
+# a band that keeps only clients almost as close as the best one.
+CLIENT_SEMANTIC_FLOOR = 0.48
+CLIENT_SEMANTIC_BAND = 0.03
+CLIENT_SEMANTIC_TOP = 3
+# A meaning-only client match scores weight x similarity (about 0.25-0.33): below any
+# word match (substring 0.6), alongside typo matches.
+CLIENT_SEMANTIC_WEIGHT = 0.5
+
 SearchText = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_QUERY_LENGTH)
 ]
@@ -108,3 +120,11 @@ class DocumentDetails:
     created_at: datetime
     client_first_name: str
     client_last_name: str
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticClientMatch:
+    """A client whose description is close in meaning to the query."""
+
+    candidate: ClientCandidate
+    similarity: float

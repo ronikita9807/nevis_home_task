@@ -4,7 +4,8 @@
 
 A search API for wealth advisors over their clients and the clients' documents:
 
-- **clients** by email, name or description: `NevisWealth` → `john.doe@neviswealth.com`;
+- **clients** by email, name or description: `NevisWealth` → `john.doe@neviswealth.com`,
+  and by the meaning of the description: `lawyer` → *"Partner at a law firm…"*;
 - **documents** by meaning and by domain synonyms: `address proof` → documents containing
   `utility bill`, `council tax bill`, `tenancy agreement`.
 
@@ -112,6 +113,7 @@ its own `score` (scores are comparable only within a block).
     "type": "client",
     "score": 0.6,
     "matched_fields": ["email"],
+    "matched_by": ["keyword"],
     "client": {
       "id": "08e4b15e-…",
       "first_name": "John",
@@ -172,6 +174,10 @@ its own `score` (scores are comparable only within a block).
 
 **Typo**: `GET /search?q=Jonh` → John Doe (`score: 0.2`, `matched_fields: ["email", "first_name"]`).
 
+**Client by meaning of the description**: `GET /search?q=lawyer&type=client` → Liam O'Brien,
+*"Partner at a law firm…"* (`score: 0.287`, `matched_by: ["semantic"]`); `doctor` → Raj Patel
+(*"Consultant surgeon…"*).
+
 **Isolation**: the same `q=NevisWealth` as Bob returns only *Bob's* John Doe record.
 
 ---
@@ -188,6 +194,12 @@ its own `score` (scores are comparable only within a block).
    pre-filter; a typo is confirmed by edit distance (≤1 edit for short words, ≤2 for longer),
    so `neviswealth` does not match the word `wealth`. Tiers: exact email or full name `1.0` >
    prefix `0.8` > all words found `0.6` > typo `0.5 × similarity`.
+3. **By meaning of the description**: each description is embedded when the client is
+   created; the query embedding finds the nearest descriptions. Measured on the demo data,
+   name-like queries reach at most 0.45 similarity while meaning queries put the right client
+   first at 0.50–0.65 with close runners-up, so a client counts only above **0.48** and
+   within **0.03** of the best one (at most 3). Such matches score `0.5 × similarity` —
+   below any word match — and carry `matched_by: ["semantic"]`.
 
 ### Documents
 
@@ -311,7 +323,7 @@ make openapi     # regenerate docs/openapi.json
 make up / seed / logs / down
 ```
 
-**Tests** (120) target behaviour that can break: the assignment's cases, isolation between
+**Tests** (132) target behaviour that can break: the assignment's cases, isolation between
 advisors, error contract, races (concurrent duplicate emails), LIKE escaping, chunking limits,
 ranking rules, and search quality with the real model. They run against a real Postgres with
 `pgvector`, migrated with Alembic.

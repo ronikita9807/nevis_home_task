@@ -4,7 +4,7 @@ from app.clients.domain import Client
 from app.clients.infra.orm import ClientRow
 
 
-def client_to_row(client: Client) -> ClientRow:
+def client_to_row(client: Client, description_embedding: list[float] | None) -> ClientRow:
     return ClientRow(
         id=client.id,
         advisor_id=client.advisor_id,
@@ -14,6 +14,7 @@ def client_to_row(client: Client) -> ClientRow:
         description=client.description,
         social_links=list(client.social_links),
         created_at=client.created_at,
+        description_embedding=description_embedding,
     )
 
 

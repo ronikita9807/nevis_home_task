@@ -635,6 +635,14 @@
             "title": "Matched Fields",
             "description": "Client fields the query matched"
           },
+          "matched_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched By",
+            "description": "`keyword` (words, typos) and/or `semantic` (meaning of the description)"
+          },
           "client": {
             "$ref": "#/components/schemas/ClientDTO"
           }
@@ -643,6 +651,7 @@
         "required": [
           "score",
           "matched_fields",
+          "matched_by",
           "client"
         ],
         "title": "ClientHit"

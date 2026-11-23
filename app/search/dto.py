@@ -21,6 +21,9 @@ class ClientHit(BaseDTO):
     type: Literal["client"] = "client"
     score: float = Field(description=SCORE_DESCRIPTION)
     matched_fields: list[str] = Field(description="Client fields the query matched")
+    matched_by: list[str] = Field(
+        description="`keyword` (words, typos) and/or `semantic` (meaning of the description)"
+    )
     client: ClientDTO
 
     @classmethod
@@ -29,6 +32,7 @@ class ClientHit(BaseDTO):
         return cls(
             score=ranked.score,
             matched_fields=[str(f) for f in ranked.matched_fields],
+            matched_by=[str(channel) for channel in ranked.channels],
             client=ClientDTO(
                 id=c.id,
                 first_name=c.first_name,
