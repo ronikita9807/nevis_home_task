@@ -1,0 +1,64 @@
+"""Shared fixtures: a real Postgres (pgvector) container, migrated with Alembic."""
+
+import os
+from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
+
+import pytest
+from alembic import command
+from alembic.config import Config
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
+from pydantic import PostgresDsn
+
+from app.main import create_app
+from app.shared.settings import Settings
+
+POSTGRES_IMAGE = "pgvector/pgvector:0.8.2-pg17"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+@pytest.fixture(scope="session")
+def database_url() -> Iterator[str]:
+    # The reaper container mounts the Docker socket. Docker Desktop (macOS) exposes it under
+    # the user's home, which cannot be mounted; the in-VM path works there and on Linux CI.
+    # testcontainers reads its config at import time, hence the import below.
+    os.environ.setdefault("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/var/run/docker.sock")
+    from testcontainers.community.postgres import PostgresContainer
+
+    with PostgresContainer(POSTGRES_IMAGE, driver="asyncpg") as postgres:
+        yield postgres.get_connection_url()
+
+
+@pytest.fixture(scope="session")
+def migrated_database_url(database_url: str) -> str:
+    alembic_config = Config(PROJECT_ROOT / "alembic.ini")
+    alembic_config.attributes["configure_logger"] = False
+    previous = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = database_url
+    try:
+        command.upgrade(alembic_config, "head")
+    finally:
+        if previous is None:
+            del os.environ["DATABASE_URL"]
+        else:
+            os.environ["DATABASE_URL"] = previous
+    return database_url
+
+
+@pytest.fixture
+def settings(migrated_database_url: str) -> Settings:
+    return Settings(database_url=PostgresDsn(migrated_database_url))
+
+
+@pytest.fixture
+async def app(settings: Settings) -> AsyncIterator[FastAPI]:
+    application = create_app(settings)
+    yield application
+    await application.state.container.database().dispose()
+
+
+@pytest.fixture
+async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
+        yield http
