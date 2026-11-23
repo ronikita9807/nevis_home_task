@@ -20,3 +20,6 @@ build/
 
 # Local tooling
 .claude/settings.local.json
+
+# Model weights downloaded by tests
+.cache/

@@ -15,6 +15,12 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
+# Ship the embedding model in the image: no download at startup, works offline.
+ARG EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+RUN /srv/.venv/bin/python -c \
+    "import sys; from fastembed import TextEmbedding; TextEmbedding(sys.argv[1], cache_dir='/srv/models')" \
+    "$EMBEDDING_MODEL"
+
 # --- Runtime stage: only the virtualenv and the application code --------------
 FROM python:3.13-slim
 
@@ -23,13 +29,18 @@ RUN useradd --system --create-home --uid 10001 app
 WORKDIR /srv
 
 COPY --from=builder /srv/.venv /srv/.venv
+COPY --from=builder /srv/models /srv/models
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY app ./app
 
+ARG EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 ENV PATH="/srv/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    WEB_CONCURRENCY=2
+    WEB_CONCURRENCY=2 \
+    EMBEDDING_MODEL=$EMBEDDING_MODEL \
+    EMBEDDING_CACHE_DIR=/srv/models \
+    HF_HUB_OFFLINE=1
 
 USER app
 EXPOSE 8000

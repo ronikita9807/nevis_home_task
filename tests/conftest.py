@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from alembic import command
 from alembic.config import Config
+from dependency_injector import providers
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from pydantic import PostgresDsn
@@ -17,6 +18,7 @@ from sqlalchemy.pool import NullPool
 from app.main import create_app
 from app.shared.db import Base
 from app.shared.settings import Settings
+from tests.documents.fakes import FakeEmbedder
 
 POSTGRES_IMAGE = "pgvector/pgvector:0.8.2-pg17"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -67,8 +69,15 @@ def settings(clean_database_url: str) -> Settings:
 
 
 @pytest.fixture
-async def app(settings: Settings) -> AsyncIterator[FastAPI]:
+def fake_embedder() -> FakeEmbedder:
+    return FakeEmbedder()
+
+
+@pytest.fixture
+async def app(settings: Settings, fake_embedder: FakeEmbedder) -> AsyncIterator[FastAPI]:
+    """The application with the fake embedder; tests of real semantics use their own app."""
     application = create_app(settings)
+    application.state.container.embedder.override(providers.Object(fake_embedder))
     yield application
     await application.state.container.database().dispose()
 

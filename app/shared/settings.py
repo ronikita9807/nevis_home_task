@@ -24,6 +24,13 @@ class Settings(BaseSettings):
 
     log_level: LogLevel = "INFO"
 
+    # Chosen in docs/embedding-experiment.md. Its size must match the `vector(384)` column.
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    # Where model weights are cached; the Docker image ships them, so no download at runtime.
+    embedding_cache_dir: str | None = None
+    # ONNX Runtime threads per process (None = all cores); keep it low with several workers.
+    embedding_threads: int | None = Field(default=None, ge=1)
+
     @field_validator("api_key", mode="before")
     @classmethod
     def _empty_api_key_means_unset(cls, value: object) -> object:
