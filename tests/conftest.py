@@ -26,10 +26,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 @pytest.fixture(scope="session")
 def database_url() -> Iterator[str]:
-    # The reaper container mounts the Docker socket. Docker Desktop (macOS) exposes it under
-    # the user's home, which cannot be mounted; the in-VM path works there and on Linux CI.
+    # The Ryuk reaper container only cleans up after a crashed run; the `with` block below
+    # already stops Postgres on a normal exit. On Docker Desktop Ryuk intermittently fails to
+    # get its port mapped ("Port mapping ... is not available"), failing the whole run.
+    # Trade-off: a killed pytest may leave one Postgres container behind.
     # testcontainers reads its config at import time, hence the import below.
-    os.environ.setdefault("TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE", "/var/run/docker.sock")
+    os.environ.setdefault("TESTCONTAINERS_RYUK_DISABLED", "true")
     from testcontainers.community.postgres import PostgresContainer
 
     with PostgresContainer(POSTGRES_IMAGE, driver="asyncpg") as postgres:

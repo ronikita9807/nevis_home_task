@@ -8,24 +8,6 @@ from typing import Protocol, Self
 from app.documents.domain import Document, DocumentChunk, DocumentSummary, SummaryMethod
 
 
-class Embedder(Protocol):
-    """Turns text into vectors whose cosine similarity reflects meaning.
-
-    Queries and documents are embedded separately: retrieval models often expect a
-    query-side instruction (prefix) that documents must not get.
-    """
-
-    @property
-    def model_name(self) -> str: ...
-
-    @property
-    def dimension(self) -> int: ...
-
-    async def embed_documents(self, texts: Sequence[str]) -> list[list[float]]: ...
-
-    async def embed_query(self, text: str) -> list[float]: ...
-
-
 class Summarizer(Protocol):
     """Writes a short summary of a document. Raises `SummarizationError` when it cannot."""
 

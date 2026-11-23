@@ -5,7 +5,7 @@ import math
 import re
 from collections.abc import Sequence
 
-from app.documents.domain import EMBEDDING_DIMENSION
+from app.shared.embeddings import EMBEDDING_DIMENSION
 
 _WORD = re.compile(r"\w+")
 

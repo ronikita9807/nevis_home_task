@@ -3,6 +3,7 @@
 import uuid
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     CheckConstraint,
     ColumnElement,
@@ -17,6 +18,7 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.shared.db import Base
+from app.shared.embeddings import EMBEDDING_DIMENSION
 
 
 class ClientRow(Base):
@@ -38,6 +40,12 @@ class ClientRow(Base):
             )
             for column in ("email", "first_name", "last_name", "description")
         ),
+        Index(
+            "ix_clients_description_embedding_hnsw",
+            "description_embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"description_embedding": "vector_cosine_ops"},
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
@@ -48,6 +56,8 @@ class ClientRow(Base):
     description: Mapped[str | None] = mapped_column(Text)
     social_links: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # Embedding of the description for search by meaning; NULL when there is no description.
+    description_embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBEDDING_DIMENSION))
 
     @classmethod
     def visible_to(cls, advisor_id: uuid.UUID) -> ColumnElement[bool]:

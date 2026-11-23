@@ -12,9 +12,9 @@ from fastapi import FastAPI
 from app.clients import api as clients_api
 from app.containers import ApplicationContainer
 from app.documents import api as documents_api
-from app.documents.domain import EMBEDDING_DIMENSION
 from app.search import api as search_api
 from app.shared import health, security
+from app.shared.embeddings import EMBEDDING_DIMENSION
 from app.shared.observability import RequestContextMiddleware, configure_logging
 from app.shared.problems import register_problem_handlers
 from app.shared.settings import Settings, load_settings

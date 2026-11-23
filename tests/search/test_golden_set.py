@@ -13,8 +13,8 @@ from dependency_injector import providers
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
 
-from app.documents.infra.embedder import FastEmbedEmbedder
 from app.main import create_app
+from app.shared.fastembed_embedder import FastEmbedEmbedder
 from app.shared.settings import Settings
 from tests.helpers import as_advisor
 from tests.search.corpus import load_json, seed_demo_corpus
@@ -108,3 +108,41 @@ async def test_address_proof_ranks_proof_of_address_documents_on_top(
 
     expected = {document_ids[k] for k in ("john_utility_bill", "emily_council_tax")}
     assert expected <= set(top3[:3])
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_last_name"),
+    [
+        ("lawyer", "O'Brien"),
+        ("doctor", "Patel"),
+        ("risk-averse investor", "Carter"),
+        ("moving to Britain", "García"),
+    ],
+)
+async def test_clients_found_by_meaning_of_description(
+    real_client: AsyncClient, query: str, expected_last_name: str
+) -> None:
+    await seed_demo_corpus(real_client)
+    advisor = uuid.UUID(load_json("demo_corpus.json")["advisors"][0]["id"])
+
+    response = await real_client.get(
+        "/search", params={"q": query, "type": "client"}, headers=as_advisor(advisor)
+    )
+
+    [first, *_] = response.json()
+    assert first["client"]["last_name"] == expected_last_name
+    assert first["matched_by"] == ["semantic"]
+
+
+@pytest.mark.parametrize("query", ["NevisWealth", "Jonh", "Raj Patel", "Carter"])
+async def test_name_like_queries_find_no_clients_by_meaning(
+    real_client: AsyncClient, query: str
+) -> None:
+    await seed_demo_corpus(real_client)
+    advisor = uuid.UUID(load_json("demo_corpus.json")["advisors"][0]["id"])
+
+    response = await real_client.get(
+        "/search", params={"q": query, "type": "client"}, headers=as_advisor(advisor)
+    )
+
+    assert [h for h in response.json() if h["matched_by"] == ["semantic"]] == []

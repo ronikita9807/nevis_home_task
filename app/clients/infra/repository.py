@@ -22,8 +22,8 @@ class PostgreSQLClientsRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def add(self, client: Client) -> None:
-        self._session.add(client_to_row(client))
+    async def add(self, client: Client, description_embedding: list[float] | None) -> None:
+        self._session.add(client_to_row(client, description_embedding))
         try:
             # Flush now so a duplicate surfaces here, as a domain error, not at commit.
             await self._session.flush()

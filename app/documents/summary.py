@@ -8,7 +8,8 @@ from app.documents.chunking import split_sentences
 from app.documents.domain import DocumentSummary, SummaryMethod
 from app.documents.dto import SummaryDTO
 from app.documents.exceptions import SummarizationError
-from app.documents.ports import DocumentsUnitOfWork, Embedder, Summarizer
+from app.documents.ports import DocumentsUnitOfWork, Summarizer
+from app.shared.embeddings import Embedder
 
 logger = logging.getLogger(__name__)
 

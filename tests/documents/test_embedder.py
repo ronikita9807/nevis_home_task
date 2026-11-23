@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from app.documents.chunking import split_into_chunks
-from app.documents.domain import EMBEDDING_DIMENSION
-from app.documents.infra.embedder import FastEmbedEmbedder
+from app.shared.embeddings import EMBEDDING_DIMENSION
+from app.shared.fastembed_embedder import FastEmbedEmbedder
 from app.shared.settings import Settings
 
 pytestmark = pytest.mark.semantic

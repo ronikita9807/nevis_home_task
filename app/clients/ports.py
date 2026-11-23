@@ -8,8 +8,11 @@ from app.clients.domain import Client
 
 
 class ClientsRepository(Protocol):
-    async def add(self, client: Client) -> None:
-        """Persist a new client. Raises `DuplicateClientEmailError` on a duplicate email."""
+    async def add(self, client: Client, description_embedding: list[float] | None) -> None:
+        """Persist a new client (and the embedding of its description, if any).
+
+        Raises `DuplicateClientEmailError` on a duplicate email.
+        """
         ...
 
     async def get(self, advisor_id: uuid.UUID, client_id: uuid.UUID) -> Client:

@@ -19,8 +19,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.documents.domain import EMBEDDING_DIMENSION
 from app.shared.db import Base
+from app.shared.embeddings import EMBEDDING_DIMENSION
 
 # English stemming: the client base is UK/US (an assumption, see FastEmbedEmbedder).
 # Multilingual search would switch this to 'simple' (new migration of the generated column).

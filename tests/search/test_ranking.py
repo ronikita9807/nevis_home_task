@@ -2,7 +2,13 @@ import uuid
 
 import pytest
 
-from app.search.domain import ClientCandidate, ClientField, normalize_query
+from app.search.domain import (
+    ClientCandidate,
+    ClientField,
+    MatchChannel,
+    SemanticClientMatch,
+    normalize_query,
+)
 from app.search.infra.queries import escape_like
 from app.search.ranking import (
     EXACT_SCORE,
@@ -10,6 +16,7 @@ from app.search.ranking import (
     SUBSTRING_SCORE,
     edit_distance,
     is_typo_of,
+    merge_semantic_clients,
     rank_clients,
 )
 
@@ -104,3 +111,43 @@ def test_normalize_query_lowercases_and_collapses_whitespace() -> None:
 )
 def test_escape_like_makes_wildcards_literal(raw: str, escaped: str) -> None:
     assert escape_like(raw) == escaped
+
+
+def _semantic(candidate: ClientCandidate, similarity: float) -> SemanticClientMatch:
+    return SemanticClientMatch(candidate=candidate, similarity=similarity)
+
+
+def test_merge_semantic_clients_keeps_only_near_best_above_floor() -> None:
+    liam, emily, raj = (_candidate(first=n, email=f"{n}@x.com") for n in ("Liam", "Emily", "Raj"))
+    semantic = [_semantic(liam, 0.574), _semantic(emily, 0.560), _semantic(raj, 0.492)]
+
+    merged = merge_semantic_clients([], semantic)
+
+    assert [r.candidate for r in merged] == [liam, emily]  # raj is outside the 0.03 band
+    assert all(r.channels == (MatchChannel.SEMANTIC,) for r in merged)
+    assert merged[0].matched_fields == [ClientField.DESCRIPTION]
+
+
+def test_merge_semantic_clients_below_floor_adds_nothing() -> None:
+    assert merge_semantic_clients([], [_semantic(_candidate(), 0.45)]) == []
+
+
+def test_merge_semantic_clients_ranks_meaning_below_word_matches() -> None:
+    by_word = _candidate(first="Emily", email="emily@x.com", description="cautious investor")
+    by_meaning = _candidate(first="Liam", email="liam@x.com")
+    [word_match] = rank_clients("cautious", [by_word])
+
+    merged = merge_semantic_clients([word_match], [_semantic(by_meaning, 0.65)])
+
+    assert [r.candidate for r in merged] == [by_word, by_meaning]
+    assert merged[1].score < SUBSTRING_SCORE
+
+
+def test_merge_semantic_clients_found_both_ways_keeps_word_score() -> None:
+    client = _candidate(description="cautious investor")
+    [word_match] = rank_clients("cautious", [client])
+
+    [merged] = merge_semantic_clients([word_match], [_semantic(client, 0.6)])
+
+    assert merged.score == word_match.score
+    assert merged.channels == (MatchChannel.KEYWORD, MatchChannel.SEMANTIC)

@@ -22,6 +22,7 @@ from app.search.domain import (
     ClientField,
     DocumentDetails,
     KeywordMatch,
+    SemanticClientMatch,
     SemanticMatch,
 )
 from app.shared.db import Database
@@ -100,6 +101,38 @@ class PostgreSQLClientSearchQuery:
                 )
             )
         return candidates
+
+    async def semantic_clients(
+        self, advisor_id: uuid.UUID, query_vector: Sequence[float], limit: int
+    ) -> list[SemanticClientMatch]:
+        distance = ClientRow.description_embedding.cosine_distance(list(query_vector))
+        statement = (
+            select(ClientRow, distance.label("distance"))
+            .where(ClientRow.visible_to(advisor_id), ClientRow.description_embedding.is_not(None))
+            .order_by(distance)
+            .limit(limit)
+        )
+        async with self._database.session() as session, session.begin():
+            await session.execute(
+                select(func.set_config("hnsw.iterative_scan", "relaxed_order", True))
+            )
+            rows = (await session.execute(statement)).all()
+        matches = [
+            SemanticClientMatch(
+                candidate=ClientCandidate(
+                    id=client.id,
+                    first_name=client.first_name,
+                    last_name=client.last_name,
+                    email=client.email,
+                    description=client.description,
+                    social_links=list(client.social_links),
+                    similarity={},
+                ),
+                similarity=1 - float(client_distance),
+            )
+            for client, client_distance in rows
+        ]
+        return sorted(matches, key=lambda m: -m.similarity)
 
 
 # HNSW explores this many candidates (default 40 would silently cap the chunk scan).
