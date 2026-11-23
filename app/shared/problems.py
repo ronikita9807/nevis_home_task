@@ -95,6 +95,7 @@ async def _handle_app_error(request: Request, exc: Exception) -> JSONResponse:
 
 async def _handle_validation_error(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, RequestValidationError)  # noqa: S101 - narrowing for the type checker
+    # Any: FastAPI types validation errors as free-form JSON-ready dicts.
     raw_errors: list[dict[str, Any]] = jsonable_encoder(exc.errors())
     errors = [
         FieldError(loc=list(error["loc"]), msg=error["msg"], type=error["type"])
@@ -134,6 +135,7 @@ def register_problem_handlers(app: FastAPI) -> None:
 
 
 # Shared OpenAPI `responses=` entries so every route documents the same error shape.
+# Any: FastAPI's `responses=` parameter is itself typed as free-form OpenAPI dicts.
 def problem_responses(*status_codes: int) -> dict[int | str, dict[str, Any]]:
     return {
         code: {

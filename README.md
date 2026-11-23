@@ -24,9 +24,37 @@ Python 3.13 · FastAPI · PostgreSQL 17 with `pgvector` and `pg_trgm` · local e
 | The spec's endpoints, REST conventions, proper HTTP codes | [API](#api) — request/response bodies as specified, extensions are additive |
 | API documentation | Swagger UI at `/docs`, [`docs/openapi.json`](docs/openapi.json) |
 | docker-compose | [Quickstart](#quickstart) |
-| Tests for core logic and edge cases | [Development](#development) — 132 tests, CI on every PR |
+| Tests for core logic and edge cases | [Development](#development) — 135 tests, CI on every PR |
 | README with setup and example queries/responses | this file |
 | Decisions and trade-offs | [Decisions & trade-offs](#decisions--trade-offs), [Assumptions & open questions](#assumptions--open-questions) |
+| Deployment with API credentials (a plus) | [Live demo](#live-demo) |
+
+---
+
+## Live demo
+
+Deployed on Render (free instance) with Postgres on Neon, seeded with the demo data below.
+`DATABASE_URL` takes the provider's connection string as is (`postgresql://…?sslmode=require`
+is converted for asyncpg); migrations and `scripts/seed.py` were run once from a workstation.
+
+| | |
+|---|---|
+| Base URL | <https://nevis-home-task.onrender.com> |
+| Swagger UI | <https://nevis-home-task.onrender.com/docs> (click **Authorize**, set both headers) |
+| `X-API-Key` | `Vj9tw8l6ZwRYKDpcaB8QjvihIXtRlsTzgPvyH1Sv3Q0` |
+| `X-Advisor-Id` | Alice `a1a1a1a1-0000-4000-8000-000000000001` or Bob `b2b2b2b2-0000-4000-8000-000000000002` |
+
+```bash
+curl -s -G https://nevis-home-task.onrender.com/search --data-urlencode "q=address proof" \
+  -H "X-API-Key: Vj9tw8l6ZwRYKDpcaB8QjvihIXtRlsTzgPvyH1Sv3Q0" \
+  -H "X-Advisor-Id: a1a1a1a1-0000-4000-8000-000000000001"
+```
+
+The free instance sleeps after ~15 minutes without traffic: the first request after that takes
+about a minute while it wakes up; later requests are fast. It runs one worker on 512 MB.
+
+The demo has no `ANTHROPIC_API_KEY` (it is a public endpoint), so document summaries there are
+`extractive`; LLM summaries work locally with a key, see [Quickstart](#quickstart).
 
 ---
 
@@ -304,6 +332,10 @@ migrations/    Alembic (pgvector, pg_trgm, tables, indexes)
 | Embedding computed **outside** the DB transaction | no pooled connection is held during inference | ownership re-checked by the FK on insert |
 | Response is the spec's array, client block then document block | the contract is kept; blocks avoid ranking clients against documents | see open questions |
 | Email unique per advisor; another advisor's data → 404 | a global constraint would leak, via 409, that someone else has this client | — |
+| Paths exactly as in the spec, no `/v1` prefix | the contract is given; a reviewer calls the spec's paths | a breaking change later needs a new prefix or a version header |
+| Only the spec's write endpoints, no update/delete | not asked for; without them summaries and embeddings never go stale | no way to correct or erase client data (needed for GDPR) |
+| A summary is stored once, whichever method produced it | an LLM call per view would be slow and costly | if Claude fails once (timeout, rate limit), that document keeps the extractive summary |
+| Client search by meaning of the description | finds `lawyer` → *Partner at a law firm* | a loosely related description can match (a client described as "verification" matches `address proof`); clients are listed before documents |
 
 ## Assumptions & open questions
 
@@ -335,6 +367,12 @@ an explicit assumption, cheap to change:
 - Hosted embedding model and/or a cross-encoder reranker on the top results; thesaurus owned by
   compliance, or expanded offline with an LLM and reviewed.
 - Pagination for search; rate limiting; metrics and tracing.
+- Update/delete endpoints with erasure of a client's documents, chunks and summaries;
+  `Idempotency-Key` on `POST` so that a retried request does not create a second document.
+- A re-index command for a model change, with search restricted to chunks of the current
+  `embedding_model` until it finishes; regenerate summaries that fell back to extractive.
+- Migrations as a release step of the deployment (here they were run by hand: the free Render
+  plan has no pre-deploy hook); a paid instance that does not sleep.
 
 ---
 
@@ -351,7 +389,7 @@ make openapi     # regenerate docs/openapi.json
 make up / seed / logs / down
 ```
 
-**Tests** (132) target behaviour that can break: the assignment's cases, isolation between
+**Tests** (135) target behaviour that can break: the assignment's cases, isolation between
 advisors, error contract, races (concurrent duplicate emails), LIKE escaping, chunking limits,
 ranking rules, and search quality with the real model. They run against a real Postgres with
 `pgvector`, migrated with Alembic.

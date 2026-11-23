@@ -1,6 +1,7 @@
 """Application settings, validated once at startup (fail fast on misconfiguration)."""
 
 from typing import Literal
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import Field, PostgresDsn, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -41,6 +42,22 @@ class Settings(BaseSettings):
     @classmethod
     def _empty_api_key_means_unset(cls, value: object) -> object:
         return None if value == "" else value
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _adapt_hosted_url_for_asyncpg(cls, value: object) -> object:
+        # Hosted Postgres (Neon, Render, ...) hands out libpq URLs: `postgresql://...?sslmode=`.
+        # Accept them as is: switch to the asyncpg driver and its `ssl` parameter.
+        url = urlsplit(str(value))
+        if url.scheme not in {"postgres", "postgresql"}:
+            return value
+        query: list[tuple[str, str]] = []
+        for key, param in parse_qsl(url.query):
+            if key == "sslmode":
+                query.append(("ssl", param))
+            elif key != "channel_binding":  # libpq-only; asyncpg has no such option
+                query.append((key, param))
+        return urlunsplit(url._replace(scheme="postgresql+asyncpg", query=urlencode(query)))
 
     @field_validator("database_url")
     @classmethod

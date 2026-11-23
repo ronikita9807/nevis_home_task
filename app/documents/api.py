@@ -42,7 +42,7 @@ async def create_document(
 
     The content is split into chunks and embedded synchronously, so the document is
     searchable as soon as this returns. 404 if the client does not exist or belongs to
-    another advisor.
+    another advisor. Not idempotent: retrying the request stores a second document.
     """
     document = await service.create_document(advisor_id, client_id, command)
     response.headers["Location"] = str(request.url_for("get_document", document_id=document.id))

@@ -63,6 +63,8 @@ class SummaryService:
             return SummaryDTO.build(document_id, document.summary)
 
         # Generated outside any transaction: an LLM call can take seconds.
+        # Trade-off: a fallback (extractive) summary is stored too, so a one-off LLM failure
+        # keeps it for this document; production would retry LLM summaries later.
         summary = await self._summarize(document.title, document.content)
         async with self._uow_factory() as uow:
             stored = await uow.documents.save_summary_if_absent(advisor_id, document_id, summary)

@@ -29,7 +29,7 @@ RUN useradd --system --create-home --uid 10001 app
 WORKDIR /srv
 
 COPY --from=builder /srv/.venv /srv/.venv
-COPY --from=builder /srv/models /srv/models
+COPY --from=builder --chown=app:app /srv/models /srv/models
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY app ./app

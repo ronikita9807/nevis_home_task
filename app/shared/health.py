@@ -39,6 +39,6 @@ async def ready(
     try:
         await database.ping()
     except Exception as exc:  # any connectivity failure means "not ready"
-        logger.warning("Readiness check failed: %s", type(exc).__name__)
+        logger.warning("Readiness check failed: %s", type(exc).__name__, exc_info=True)
         raise ServiceUnavailableError("Database is unavailable") from exc
     return StatusDTO(status="ready")

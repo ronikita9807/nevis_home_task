@@ -72,6 +72,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(RequestContextMiddleware)
     register_problem_handlers(app)
     app.include_router(health.router)
+    # Paths exactly as in the assignment's spec, without a /v1 prefix: the contract is given.
+    # A breaking change would need a version prefix or header (see README, trade-offs).
     app.include_router(clients_api.router)
     app.include_router(documents_api.router)
     app.include_router(search_api.router)
