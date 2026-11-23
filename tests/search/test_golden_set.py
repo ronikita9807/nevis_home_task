@@ -84,6 +84,20 @@ async def test_golden_set_recall_and_mrr(real_client: AsyncClient) -> None:
     assert mrr >= MIN_MRR
 
 
+@pytest.mark.parametrize("query", ["NevisWealth", "Jonh", "Raj Patel"])
+async def test_name_like_queries_do_not_drag_in_unrelated_documents(
+    real_client: AsyncClient, query: str
+) -> None:
+    await seed_demo_corpus(real_client)
+    advisor = uuid.UUID(load_json("demo_corpus.json")["advisors"][0]["id"])
+
+    response = await real_client.get(
+        "/search", params={"q": query, "type": "document"}, headers=as_advisor(advisor)
+    )
+
+    assert [h for h in response.json() if h["matched_by"] == ["semantic"]] == []
+
+
 async def test_address_proof_ranks_proof_of_address_documents_on_top(
     real_client: AsyncClient,
 ) -> None:

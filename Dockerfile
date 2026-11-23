@@ -33,6 +33,9 @@ COPY --from=builder /srv/models /srv/models
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY app ./app
+# Demo data and its loader: `docker compose exec api python scripts/seed.py`
+COPY data ./data
+COPY scripts/seed.py ./scripts/seed.py
 
 ARG EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 ENV PATH="/srv/.venv/bin:$PATH" \
@@ -45,4 +48,6 @@ ENV PATH="/srv/.venv/bin:$PATH" \
 USER app
 EXPOSE 8000
 
-CMD ["sh", "-c", "exec gunicorn 'app.main:create_app()' --worker-class uvicorn_worker.UvicornWorker --workers ${WEB_CONCURRENCY} --bind 0.0.0.0:8000"]
+# Indexing runs inside the request (~0.2 s per KB of text on a laptop, ~20 s for the 100 KB
+# maximum): the worker timeout must exceed it (gunicorn's default is 30 s).
+CMD ["sh", "-c", "exec gunicorn 'app.main:create_app()' --worker-class uvicorn_worker.UvicornWorker --workers ${WEB_CONCURRENCY} --timeout 120 --graceful-timeout 30 --bind 0.0.0.0:8000"]

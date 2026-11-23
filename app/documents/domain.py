@@ -13,7 +13,9 @@ from app.shared.domain import BaseDomainModel
 EMBEDDING_DIMENSION = 384
 
 MAX_TITLE_LENGTH = 300
-MAX_CONTENT_LENGTH = 100_000  # characters; larger documents would need async indexing
+# Characters. Indexing is synchronous (~20 s at this size on a laptop CPU); larger documents
+# would need asynchronous indexing.
+MAX_CONTENT_LENGTH = 100_000
 
 Title = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_TITLE_LENGTH)

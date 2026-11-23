@@ -17,6 +17,7 @@ from app.search.domain import (
     FUZZY_THRESHOLD,
     MIN_FUZZY_TOKEN_LENGTH,
     SEMANTIC_CHUNK_CANDIDATES,
+    SEMANTIC_NOISE_FLOOR,
     ClientCandidate,
     ClientField,
     DocumentDetails,
@@ -134,6 +135,8 @@ class PostgreSQLDocumentSearchQuery:
         best: dict[uuid.UUID, SemanticMatch] = {}
         # relaxed_order may return rows slightly out of order: sort before picking the best.
         for document_id, chunk_text, chunk_distance in sorted(rows, key=lambda r: r.distance):
+            if 1 - float(chunk_distance) < SEMANTIC_NOISE_FLOOR:
+                break
             if document_id not in best:
                 best[document_id] = SemanticMatch(
                     document_id=document_id,

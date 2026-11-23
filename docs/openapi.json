@@ -1,0 +1,939 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Nevis Search API",
+    "description": "\nSearch across an advisor's clients and their documents.\n\n**Authentication** (use *Authorize*):\n- `X-Advisor-Id` — required on every business endpoint: UUID of the advisor on whose behalf\n  the call is made. All data is scoped to it; another advisor's data is never returned\n  (it is reported as 404).\n- `X-API-Key` — shared key of the trusted caller (gateway/BFF); required only when the\n  server is configured with `API_KEY`.\n\n**Errors** use RFC 9457 Problem Details (`application/problem+json`) with a stable `code`\nand the `request_id` of the call.\n",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Liveness probe",
+        "description": "Return 200 while the process is alive. Dependencies are not checked.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Readiness probe",
+        "description": "Return 200 when the service can serve traffic (database reachable), otherwise 503.",
+        "operationId": "ready_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusDTO"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clients": {
+      "post": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Create a client",
+        "description": "Create a client owned by the calling advisor (`X-Advisor-Id`).\n\nThe email is normalised to lower case and must be unique among the advisor's clients\n(409 otherwise). Other advisors may have a client with the same email: each advisor\nkeeps their own record of a person.",
+        "operationId": "create_client_clients_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClientCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ServiceKey": []
+          },
+          {
+            "AdvisorId": []
+          }
+        ]
+      }
+    },
+    "/clients/{client_id}": {
+      "get": {
+        "tags": [
+          "clients"
+        ],
+        "summary": "Get a client",
+        "description": "Return one of the calling advisor's clients.\n\n404 both when the client does not exist and when it belongs to another advisor.",
+        "operationId": "get_client_clients__client_id__get",
+        "security": [
+          {
+            "ServiceKey": []
+          },
+          {
+            "AdvisorId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clients/{client_id}/documents": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Add a document to a client",
+        "description": "Store a document for one of the calling advisor's clients and index it for search.\n\nThe content is split into chunks and embedded synchronously, so the document is\nsearchable as soon as this returns. 404 if the client does not exist or belongs to\nanother advisor.",
+        "operationId": "create_document_clients__client_id__documents_post",
+        "security": [
+          {
+            "ServiceKey": []
+          },
+          {
+            "AdvisorId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDocumentCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/documents/{document_id}": {
+      "get": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Get a document",
+        "description": "Return one of the calling advisor's documents (404 for another advisor's document).",
+        "operationId": "get_document_documents__document_id__get",
+        "security": [
+          {
+            "ServiceKey": []
+          },
+          {
+            "AdvisorId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDTO"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "tags": [
+          "search"
+        ],
+        "summary": "Search clients and documents",
+        "description": "Search the calling advisor's clients and documents.\n\n**Clients** match on email, first/last name and description: every query word must\nappear in some field (case-insensitive), with tolerance for typos in words of 4+ letters.\nExample: `NevisWealth` finds `john.doe@neviswealth.com`.\n\n**Documents** are found by meaning (embeddings of document chunks) and by keywords,\nincluding known synonyms of document types. Example: `address proof` finds documents\ncontaining `utility bill`. Each hit has a snippet and the owning client.\n\nThe response is an array: client hits first, then document hits, each block ordered by\nits own `score`. Only the calling advisor's data is searched.",
+        "operationId": "search_search_get",
+        "security": [
+          {
+            "ServiceKey": []
+          },
+          {
+            "AdvisorId": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "description": "Search text (1-256 characters)",
+              "title": "Q"
+            },
+            "description": "Search text (1-256 characters)"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SearchType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Return only one kind of result",
+              "title": "Type"
+            },
+            "description": "Return only one kind of result"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Maximum results per kind",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Maximum results per kind"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/ClientHit"
+                      },
+                      {
+                        "$ref": "#/components/schemas/DocumentHit"
+                      }
+                    ],
+                    "discriminator": {
+                      "propertyName": "type",
+                      "mapping": {
+                        "client": "#/components/schemas/ClientHit",
+                        "document": "#/components/schemas/DocumentHit"
+                      }
+                    }
+                  },
+                  "title": "Response Search Search Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ClientDTO": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "first_name": {
+            "type": "string",
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "title": "Last Name"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "social_links": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Social Links"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "first_name",
+          "last_name",
+          "email",
+          "description",
+          "social_links"
+        ],
+        "title": "ClientDTO",
+        "description": "`Client` schema from the spec. The owning advisor is not exposed."
+      },
+      "ClientHit": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "client",
+            "title": "Type",
+            "default": "client"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "Relevance within its own block (clients or documents); higher is better. Not a probability and not comparable across blocks."
+          },
+          "matched_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched Fields",
+            "description": "Client fields the query matched"
+          },
+          "client": {
+            "$ref": "#/components/schemas/ClientDTO"
+          }
+        },
+        "type": "object",
+        "required": [
+          "score",
+          "matched_fields",
+          "client"
+        ],
+        "title": "ClientHit"
+      },
+      "ClientRefDTO": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "first_name": {
+            "type": "string",
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "title": "Last Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "first_name",
+          "last_name"
+        ],
+        "title": "ClientRefDTO",
+        "description": "Whose document it is, so the advisor does not need a second request."
+      },
+      "CreateClientCommand": {
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "First Name"
+          },
+          "last_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Last Name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "social_links": {
+            "items": {
+              "type": "string",
+              "maxLength": 2048,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Social Links"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "first_name",
+          "last_name",
+          "email"
+        ],
+        "title": "CreateClientCommand",
+        "description": "Body of `POST /clients`. The owning advisor comes from `X-Advisor-Id`, not the body.",
+        "examples": [
+          {
+            "description": "Senior software engineer, long-term growth investor.",
+            "email": "john.doe@neviswealth.com",
+            "first_name": "John",
+            "last_name": "Doe",
+            "social_links": [
+              "https://www.linkedin.com/in/john-doe-example"
+            ]
+          }
+        ]
+      },
+      "CreateDocumentCommand": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "content"
+        ],
+        "title": "CreateDocumentCommand",
+        "description": "Body of `POST /clients/{id}/documents`. The client comes from the path.",
+        "examples": [
+          {
+            "content": "Energy statement for 14 Elm Road, Richmond. Amount due: £187.42.",
+            "title": "Utility bill — British Gas, March 2024"
+          }
+        ]
+      },
+      "DocumentDTO": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "client_id",
+          "title",
+          "content",
+          "created_at"
+        ],
+        "title": "DocumentDTO",
+        "description": "`Document` schema from the spec."
+      },
+      "DocumentHit": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "document",
+            "title": "Type",
+            "default": "document"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "description": "Relevance within its own block (clients or documents); higher is better. Not a probability and not comparable across blocks."
+          },
+          "matched_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Matched By",
+            "description": "`semantic` (similar meaning) and/or `keyword` (words or known synonyms)"
+          },
+          "snippet": {
+            "type": "string",
+            "title": "Snippet",
+            "description": "Most relevant passage of the document"
+          },
+          "document": {
+            "$ref": "#/components/schemas/DocumentSummaryDTO"
+          },
+          "client": {
+            "$ref": "#/components/schemas/ClientRefDTO"
+          }
+        },
+        "type": "object",
+        "required": [
+          "score",
+          "matched_by",
+          "snippet",
+          "document",
+          "client"
+        ],
+        "title": "DocumentHit"
+      },
+      "DocumentSummaryDTO": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "client_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "client_id",
+          "title",
+          "created_at"
+        ],
+        "title": "DocumentSummaryDTO",
+        "description": "The spec `Document` without its full content (the hit carries a snippet instead)."
+      },
+      "FieldError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Loc"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "FieldError"
+      },
+      "ProblemDetails": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "about:blank"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "instance": {
+            "type": "string",
+            "title": "Instance"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FieldError"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "code"
+        ],
+        "title": "ProblemDetails",
+        "description": "Error response body (RFC 9457)."
+      },
+      "SearchType": {
+        "type": "string",
+        "enum": [
+          "client",
+          "document"
+        ],
+        "title": "SearchType"
+      },
+      "StatusDTO": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "StatusDTO"
+      }
+    },
+    "securitySchemes": {
+      "ServiceKey": {
+        "type": "apiKey",
+        "description": "Shared key of the trusted caller. Required only when the server sets API_KEY.",
+        "in": "header",
+        "name": "X-API-Key"
+      },
+      "AdvisorId": {
+        "type": "apiKey",
+        "description": "UUID of the advisor on whose behalf the call is made. All data is scoped to it.",
+        "in": "header",
+        "name": "X-Advisor-Id"
+      }
+    }
+  }
+}
