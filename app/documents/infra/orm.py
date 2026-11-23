@@ -5,6 +5,7 @@ from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    CheckConstraint,
     ColumnElement,
     Computed,
     DateTime,
@@ -41,6 +42,8 @@ class DocumentRow(Base):
         UniqueConstraint("id", "advisor_id"),  # target of the chunks' composite FK
         Index(None, "advisor_id", "client_id"),
         Index(None, "search_tsv", postgresql_using="gin"),
+        CheckConstraint("summary_method IN ('llm', 'extractive')", name="summary_method_known"),
+        CheckConstraint("(summary IS NULL) = (summary_method IS NULL)", name="summary_with_method"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
@@ -52,6 +55,8 @@ class DocumentRow(Base):
         TSVECTOR, Computed(SEARCH_TSV_EXPRESSION, persisted=True)
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    summary: Mapped[str | None] = mapped_column(Text)
+    summary_method: Mapped[str | None] = mapped_column(Text)
 
     @classmethod
     def visible_to(cls, advisor_id: uuid.UUID) -> ColumnElement[bool]:

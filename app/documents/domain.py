@@ -1,7 +1,9 @@
 """Document entity, its searchable chunks and the field types shared with commands."""
 
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Annotated, Self
 
 from pydantic import Field, StringConstraints
@@ -28,6 +30,17 @@ Embedding = Annotated[
 ]
 
 
+class SummaryMethod(StrEnum):
+    LLM = "llm"
+    EXTRACTIVE = "extractive"
+
+
+@dataclass(frozen=True, slots=True)
+class DocumentSummary:
+    text: str
+    method: SummaryMethod
+
+
 class Document(BaseDomainModel):
     """A client's document. Its owner is always the owner of the client."""
 
@@ -37,6 +50,8 @@ class Document(BaseDomainModel):
     title: Title
     content: Content
     created_at: datetime
+    # Computed on first request and cached: documents are immutable, so it never goes stale.
+    summary: DocumentSummary | None = None
 
     @classmethod
     def create(

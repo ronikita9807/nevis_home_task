@@ -6,14 +6,19 @@ from contextlib import AsyncExitStack
 from types import TracebackType
 from typing import Self
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients.exceptions import ClientNotFoundError
-from app.documents.domain import Document, DocumentChunk
+from app.documents.domain import Document, DocumentChunk, DocumentSummary
 from app.documents.exceptions import DocumentNotFoundError
-from app.documents.infra.mappers import chunk_to_row, document_to_domain, document_to_row
+from app.documents.infra.mappers import (
+    chunk_to_row,
+    document_to_domain,
+    document_to_row,
+    summary_to_domain,
+)
 from app.documents.infra.orm import DocumentRow
 from app.shared.db import FOREIGN_KEY_VIOLATION, Database, violated_constraint
 
@@ -47,6 +52,34 @@ class PostgreSQLDocumentsRepository:
         if row is None:
             raise DocumentNotFoundError
         return document_to_domain(row)
+
+    async def save_summary_if_absent(
+        self, advisor_id: uuid.UUID, document_id: uuid.UUID, summary: DocumentSummary
+    ) -> DocumentSummary:
+        # Conditional update instead of read-modify-write: concurrent first requests may both
+        # generate a summary, but only the first is stored and everyone returns that one.
+        statement = (
+            update(DocumentRow)
+            .where(
+                DocumentRow.id == document_id,
+                DocumentRow.visible_to(advisor_id),
+                DocumentRow.summary.is_(None),
+            )
+            .values(summary=summary.text, summary_method=str(summary.method))
+            .returning(DocumentRow.id)
+        )
+        if await self._session.scalar(statement) is not None:
+            return summary
+        stored = await self._session.execute(
+            select(DocumentRow.summary, DocumentRow.summary_method).where(
+                DocumentRow.id == document_id, DocumentRow.visible_to(advisor_id)
+            )
+        )
+        row = stored.one_or_none()
+        existing = summary_to_domain(row.summary, row.summary_method) if row else None
+        if existing is None:
+            raise DocumentNotFoundError
+        return existing
 
 
 class PostgreSQLDocumentsUnitOfWork:

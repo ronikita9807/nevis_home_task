@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Self
 
-from app.documents.domain import Document
+from app.documents.domain import Document, DocumentSummary, SummaryMethod
 from app.shared.domain import BaseDTO
 
 
@@ -26,3 +26,15 @@ class DocumentDTO(BaseDTO):
             content=document.content,
             created_at=document.created_at,
         )
+
+
+class SummaryDTO(BaseDTO):
+    """Short summary of a document and how it was produced."""
+
+    document_id: uuid.UUID
+    summary: str
+    method: SummaryMethod
+
+    @classmethod
+    def build(cls, document_id: uuid.UUID, summary: DocumentSummary) -> Self:
+        return cls(document_id=document_id, summary=summary.text, method=summary.method)

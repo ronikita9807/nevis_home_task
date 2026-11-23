@@ -53,6 +53,7 @@ taken by a local Postgres). Override with `API_PORT` / `DB_PORT`.
 | `GET` | `/search?q=` | Search clients and documents | 200 | 401, 422 |
 | `GET` | `/clients/{id}` | Get a client *(extension)* | 200 | 401, 404 |
 | `GET` | `/documents/{id}` | Get a document *(extension)* | 200 | 401, 404 |
+| `GET` | `/documents/{id}/summary` | 2–3 sentence summary *(optional feature)* | 200 | 401, 404 |
 | `GET` | `/health`, `/ready` | Liveness / readiness (database) | 200 | 503 |
 
 Request and response bodies follow the assignment's OpenAPI spec; everything else is
@@ -68,6 +69,18 @@ sync by a test).
 
 **`GET /search` parameters**: `q` (1–256 characters), optional `type=client|document`,
 `limit` per kind (1–100, default 20).
+
+**Document summary** (`GET /documents/{id}/summary`) returns
+`{"document_id": "…", "summary": "…", "method": "llm" | "extractive"}`, cached after the first call.
+
+- `extractive` (default): the 3 sentences closest to the document's mean embedding, in
+  order. Local, deterministic, nothing leaves the service.
+- `llm`: written by Claude (`claude-haiku-5-5`, low effort) when the server has
+  `ANTHROPIC_API_KEY` (`ANTHROPIC_API_KEY=sk-ant-… docker compose up -d`). **This sends the
+  document's text, i.e. client data, to Anthropic** — an operator decision, hence opt-in.
+  The document is passed as delimited, untrusted data (instructions inside it are not
+  followed). On timeout (10 s), API error, refusal or empty output the endpoint falls back to
+  `extractive` instead of failing.
 
 **Errors** are [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) Problem Details:
 
@@ -269,7 +282,9 @@ an explicit assumption, cheap to change:
   better; the spec asks for an array, so blocks + `type=` give the same behaviour without
   breaking the contract.
 - **Documents** — plain text up to 100 KB; no file upload or OCR.
-- **Third-party AI** — nothing leaves the service: embeddings are computed locally.
+- **Third-party AI** — by default nothing leaves the service: embeddings and summaries are
+  computed locally. LLM summaries are opt-in (`ANTHROPIC_API_KEY`) because they send client
+  data to a third party.
 
 ## Production next steps
 
@@ -296,7 +311,7 @@ make openapi     # regenerate docs/openapi.json
 make up / seed / logs / down
 ```
 
-**Tests** (106) target behaviour that can break: the assignment's cases, isolation between
+**Tests** (120) target behaviour that can break: the assignment's cases, isolation between
 advisors, error contract, races (concurrent duplicate emails), LIKE escaping, chunking limits,
 ranking rules, and search quality with the real model. They run against a real Postgres with
 `pgvector`, migrated with Alembic.

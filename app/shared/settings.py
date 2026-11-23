@@ -31,7 +31,13 @@ class Settings(BaseSettings):
     # ONNX Runtime threads per process (None = all cores); keep it low with several workers.
     embedding_threads: int | None = Field(default=None, ge=1)
 
-    @field_validator("api_key", mode="before")
+    # Document summaries with Claude. Without a key, summaries are extractive (local only):
+    # setting it sends document text to Anthropic.
+    anthropic_api_key: SecretStr | None = None
+    summary_model: str = "claude-haiku-5-5"
+    summary_timeout_seconds: float = Field(default=10.0, gt=0)
+
+    @field_validator("api_key", "anthropic_api_key", mode="before")
     @classmethod
     def _empty_api_key_means_unset(cls, value: object) -> object:
         return None if value == "" else value

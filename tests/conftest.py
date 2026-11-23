@@ -65,7 +65,8 @@ async def clean_database_url(migrated_database_url: str) -> str:
 
 @pytest.fixture
 def settings(clean_database_url: str) -> Settings:
-    return Settings(database_url=PostgresDsn(clean_database_url))
+    # No real LLM in tests, even if the developer's environment has ANTHROPIC_API_KEY set.
+    return Settings(database_url=PostgresDsn(clean_database_url), anthropic_api_key=None)
 
 
 @pytest.fixture

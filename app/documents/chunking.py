@@ -39,6 +39,11 @@ def split_into_chunks(
     return [" ".join(word for unit in chunk for word in unit) for chunk in chunks]
 
 
+def split_sentences(text: str) -> list[str]:
+    """Sentences of `text` (split after `.`, `!` or `?`), blanks dropped."""
+    return [s.strip() for s in _SENTENCE_END.split(text.strip()) if s.strip()]
+
+
 def _units(text: str, max_words: int) -> list[Unit]:
     units: list[Unit] = []
     for sentence in _SENTENCE_END.split(text.strip()):

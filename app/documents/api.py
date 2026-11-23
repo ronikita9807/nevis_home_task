@@ -7,8 +7,9 @@ from fastapi import APIRouter, Depends, Request, Response, status
 
 from app.containers import ApplicationContainer
 from app.documents.commands import CreateDocumentCommand
-from app.documents.dto import DocumentDTO
+from app.documents.dto import DocumentDTO, SummaryDTO
 from app.documents.service import DocumentsService
+from app.documents.summary import SummaryService
 from app.shared.problems import problem_responses
 from app.shared.security import AdvisorId, require_service_key
 
@@ -57,3 +58,19 @@ async def get_document(
 ) -> DocumentDTO:
     """Return one of the calling advisor's documents (404 for another advisor's document)."""
     return await service.get_document(advisor_id, document_id)
+
+
+@router.get("/documents/{document_id}/summary", summary="Get a short summary of a document")
+@inject
+async def get_document_summary(
+    document_id: uuid.UUID,
+    advisor_id: AdvisorId,
+    service: SummaryService = Depends(Provide[ApplicationContainer.summary_service]),  # noqa: B008
+) -> SummaryDTO:
+    """Return a 2-3 sentence summary of one of the calling advisor's documents.
+
+    Written by Claude when the server is configured with ANTHROPIC_API_KEY (`method: llm`),
+    otherwise - or if the model fails or times out - the most representative sentences of the
+    document are used (`method: extractive`). Computed on the first request, then cached.
+    """
+    return await service.get_summary(advisor_id, document_id)

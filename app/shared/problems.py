@@ -18,6 +18,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.shared.exceptions import (
     AppError,
     ConflictError,
+    ExternalServiceError,
     NotFoundError,
     ServiceUnavailableError,
     UnauthorizedError,
@@ -33,6 +34,7 @@ _STATUS_BY_ERROR: dict[type[AppError], int] = {
     ConflictError: status.HTTP_409_CONFLICT,
     UnauthorizedError: status.HTTP_401_UNAUTHORIZED,
     ServiceUnavailableError: status.HTTP_503_SERVICE_UNAVAILABLE,
+    ExternalServiceError: status.HTTP_502_BAD_GATEWAY,
 }
 
 

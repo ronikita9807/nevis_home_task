@@ -40,10 +40,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings.log_level)
 
     container = ApplicationContainer()
-    container.config.from_dict(settings.model_dump(mode="json", exclude={"api_key"}))
+    secrets = {"api_key", "anthropic_api_key"}
+    container.config.from_dict(settings.model_dump(mode="json", exclude=secrets))
     # Passed separately: a JSON dump masks secrets as "**********".
-    api_key = settings.api_key.get_secret_value() if settings.api_key else None
-    container.config.api_key.from_value(api_key)
+    for name in secrets:
+        secret = getattr(settings, name)
+        getattr(container.config, name).from_value(secret.get_secret_value() if secret else None)
     container.wire(modules=[health, security, clients_api, documents_api, search_api])
 
     @asynccontextmanager
