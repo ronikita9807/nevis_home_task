@@ -59,6 +59,17 @@ curl -s -G localhost:8000/search --data-urlencode "q=address proof" \
 Ports are bound to `127.0.0.1`: API on `8000`, Postgres on `5433` (not `5432`, which is often
 taken by a local Postgres). Override with `API_PORT` / `DB_PORT`.
 
+**Optional: LLM summaries.** Without a key, summaries are extractive and nothing leaves the
+service. To have Claude write them, put the key in `.env` (git-ignored; Compose reads it
+automatically) and restart:
+
+```bash
+cp .env.example .env                 # then set ANTHROPIC_API_KEY=sk-ant-… in .env
+docker compose up -d --wait          # recreates the api container with the key (or: make up)
+```
+
+See [Document summary](#api) for what this sends to Anthropic.
+
 ---
 
 ## API
@@ -93,7 +104,7 @@ sync by a test).
 - `extractive` (default): the 3 sentences closest to the document's mean embedding, in
   order. Local, deterministic, nothing leaves the service.
 - `llm`: written by Claude (`claude-haiku-5-5`, low effort) when the server has
-  `ANTHROPIC_API_KEY` (`ANTHROPIC_API_KEY=sk-ant-… docker compose up -d`). **This sends the
+  `ANTHROPIC_API_KEY` (set it in `.env`, see [Quickstart](#quickstart)). **This sends the
   document's text, i.e. client data, to Anthropic** — an operator decision, hence opt-in.
   The document is passed as delimited, untrusted data (instructions inside it are not
   followed). On timeout (10 s), API error, refusal or empty output the endpoint falls back to
