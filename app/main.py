@@ -13,6 +13,7 @@ from app.clients import api as clients_api
 from app.containers import ApplicationContainer
 from app.documents import api as documents_api
 from app.documents.domain import EMBEDDING_DIMENSION
+from app.search import api as search_api
 from app.shared import health, security
 from app.shared.observability import RequestContextMiddleware, configure_logging
 from app.shared.problems import register_problem_handlers
@@ -29,7 +30,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Passed separately: a JSON dump masks secrets as "**********".
     api_key = settings.api_key.get_secret_value() if settings.api_key else None
     container.config.api_key.from_value(api_key)
-    container.wire(modules=[health, security, clients_api, documents_api])
+    container.wire(modules=[health, security, clients_api, documents_api, search_api])
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
@@ -52,4 +53,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(clients_api.router)
     app.include_router(documents_api.router)
+    app.include_router(search_api.router)
     return app
