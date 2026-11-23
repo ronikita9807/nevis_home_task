@@ -19,6 +19,20 @@ from app.shared.observability import RequestContextMiddleware, configure_logging
 from app.shared.problems import register_problem_handlers
 from app.shared.settings import Settings, load_settings
 
+API_DESCRIPTION = """
+Search across an advisor's clients and their documents.
+
+**Authentication** (use *Authorize*):
+- `X-Advisor-Id` — required on every business endpoint: UUID of the advisor on whose behalf
+  the call is made. All data is scoped to it; another advisor's data is never returned
+  (it is reported as 404).
+- `X-API-Key` — shared key of the trusted caller (gateway/BFF); required only when the
+  server is configured with `API_KEY`.
+
+**Errors** use RFC 9457 Problem Details (`application/problem+json`) with a stable `code`
+and the `request_id` of the call.
+"""
+
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Build the FastAPI application: container, routers, handlers and lifecycle hooks."""
@@ -45,7 +59,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
         await container.database().dispose()
 
-    app = FastAPI(title="Nevis Search API", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(
+        title="Nevis Search API",
+        version="0.1.0",
+        description=API_DESCRIPTION,
+        lifespan=lifespan,
+    )
     app.state.container = container
 
     app.add_middleware(RequestContextMiddleware)

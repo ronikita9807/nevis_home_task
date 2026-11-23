@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install fmt lint typecheck test check up down logs experiment eval
+.PHONY: help install fmt lint typecheck test check up down logs experiment eval seed openapi
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
@@ -27,6 +27,9 @@ check: lint typecheck test ## Run everything CI runs
 up: ## Build and start db, migrations and api (http://localhost:8000/docs)
 	docker compose up --build -d --wait
 
+seed: ## Load the demo corpus into the running stack (idempotent)
+	docker compose exec api python scripts/seed.py
+
 down: ## Stop containers (keeps the database volume)
 	docker compose down
 
@@ -38,3 +41,6 @@ experiment: ## Compare embedding models on the golden set (add ARGS=--extended f
 
 eval: ## Search quality on the golden set through the whole pipeline (recall@5, MRR)
 	uv run pytest tests/search/test_golden_set.py -q -s -k recall
+
+openapi: ## Regenerate docs/openapi.json from the code
+	PYTHONPATH=. uv run python scripts/export_openapi.py

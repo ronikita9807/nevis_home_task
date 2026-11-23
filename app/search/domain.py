@@ -56,11 +56,16 @@ class ClientCandidate:
 
 # --- Documents ----------------------------------------------------------------------
 
-# No absolute similarity cut-off is reliable (relevant/irrelevant cosine scores overlap,
-# docs/embedding-experiment.md), so the semantic channel proposes a fixed number of best
-# documents; keyword matches are always included; RRF orders the union.
+# No similarity cut-off separates relevant from irrelevant documents (their cosine scores
+# overlap, docs/embedding-experiment.md), so the semantic channel proposes a fixed number of
+# best documents; keyword matches are always included; RRF orders the union.
 SEMANTIC_TOP_DOCUMENTS = 5
 SEMANTIC_CHUNK_CANDIDATES = 100  # nearest chunks scanned to find the best documents
+# A noise floor, not a relevance cut-off: below it a chunk is unrelated to the query (names,
+# emails, company names). Measured on the golden set: recall/MRR are unchanged up to 0.55 and
+# collapse at 0.6 (0.92 -> 0.58); at 0.5 queries such as "NevisWealth" or "Jonh" no longer
+# drag in unrelated documents.
+SEMANTIC_NOISE_FLOOR = 0.5
 KEYWORD_CANDIDATES = 50
 RRF_K = 60  # standard Reciprocal Rank Fusion constant
 # Weighted RRF: a keyword match (the query's words or a curated synonym) is high-precision,

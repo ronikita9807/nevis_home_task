@@ -1,11 +1,12 @@
 """Pure ranking rules for search results (no I/O: unit-tested directly)."""
 
+import re
 import uuid
 from dataclasses import dataclass
 
 from app.search.domain import (
-    FUZZY_THRESHOLD,
     KEYWORD_WEIGHT,
+    MIN_FUZZY_TOKEN_LENGTH,
     RRF_K,
     SEMANTIC_WEIGHT,
     SNIPPET_MAX_WORDS,
@@ -21,6 +22,8 @@ PREFIX_SCORE = 0.8
 SUBSTRING_SCORE = 0.6
 FUZZY_WEIGHT = 0.5  # fuzzy score = weight x similarity, so always below a substring match
 
+_WORD = re.compile(r"\w+")
+
 
 @dataclass(frozen=True, slots=True)
 class RankedClient:
@@ -32,8 +35,10 @@ class RankedClient:
 def rank_clients(query: str, candidates: list[ClientCandidate]) -> list[RankedClient]:
     """Score and order clients for a normalised query, best first, deterministically.
 
+    Every query word must be found in some field, either as a substring or as a typo of a
+    word (confirmed by edit distance: the SQL trigram filter is only a cheap pre-filter).
     Tiers: exact email or full name (1.0) > prefix of email or a name (0.8) >
-    every query word found in some field (0.6) > typo-tolerant match (0.5 x similarity).
+    every word found as a substring (0.6) > typo-tolerant match (0.5 x similarity).
     """
     ranked = [r for c in candidates if (r := _score_client(query, c)) is not None]
     return sorted(
@@ -50,14 +55,10 @@ def _score_client(query: str, candidate: ClientCandidate) -> RankedClient | None
         ClientField.DESCRIPTION: (candidate.description or "").lower(),
     }
     words = query.split()
-    matched = [
-        field
-        for field, value in values.items()
-        if any(word in value for word in words)
-        or candidate.similarity.get(field, 0.0) > FUZZY_THRESHOLD
-    ]
-    if not matched:
+    hits = {word: _fields_matching(word, values) for word in words}
+    if not all(hits.values()):
         return None
+    matched = [field for field in values if any(field in fields for fields in hits.values())]
 
     first, last = values[ClientField.FIRST_NAME], values[ClientField.LAST_NAME]
     full_names = (f"{first} {last}", f"{last} {first}")
@@ -70,8 +71,44 @@ def _score_client(query: str, candidate: ClientCandidate) -> RankedClient | None
     elif all(any(word in value for value in values.values()) for word in words):
         score = SUBSTRING_SCORE
     else:
-        score = FUZZY_WEIGHT * max(candidate.similarity.values(), default=0.0)
+        score = FUZZY_WEIGHT * max(candidate.similarity.get(field, 0.0) for field in matched)
     return RankedClient(candidate=candidate, score=round(score, 4), matched_fields=matched)
+
+
+def _fields_matching(word: str, values: dict[ClientField, str]) -> set[ClientField]:
+    return {
+        field
+        for field, value in values.items()
+        if word in value or (len(word) >= MIN_FUZZY_TOKEN_LENGTH and is_typo_of(word, value))
+    }
+
+
+def is_typo_of(word: str, text: str) -> bool:
+    """`word` is within a few edits of some word of `text` ("jonh" ~ "john", "mueller" ~ "müller").
+
+    Allowed edits: 1 for words of up to 5 letters, 2 for longer ones. A fragment of a longer
+    word is not a typo: "neviswealth" does not match "wealth" (5 edits apart).
+    """
+    max_edits = 1 if len(word) <= 5 else 2
+    return any(
+        abs(len(candidate) - len(word)) <= max_edits and edit_distance(word, candidate) <= max_edits
+        for candidate in _WORD.findall(text)
+    )
+
+
+def edit_distance(a: str, b: str) -> int:
+    """Optimal string alignment distance: insertions, deletions, substitutions, transpositions."""
+    previous_previous: list[int] = []
+    previous = list(range(len(b) + 1))
+    for i, char_a in enumerate(a, start=1):
+        current = [i] + [0] * len(b)
+        for j, char_b in enumerate(b, start=1):
+            cost = 0 if char_a == char_b else 1
+            current[j] = min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost)
+            if i > 1 and j > 1 and char_a == b[j - 2] and a[i - 2] == char_b:
+                current[j] = min(current[j], previous_previous[j - 2] + 1)
+        previous_previous, previous = previous, current
+    return previous[-1]
 
 
 @dataclass(frozen=True, slots=True)

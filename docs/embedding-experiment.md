@@ -46,9 +46,11 @@ Reproduce: `uv run python scripts/embedding_experiment.py --extended`
   deterministic, explainable to compliance, instant, testable. The thesaurus describes
   document categories, not golden queries — most golden queries are not covered by it and keep
   measuring the embeddings honestly.
-- **No absolute similarity threshold.** The semantic channel proposes a bounded number of best
-  documents (top-N, configurable); keyword/thesaurus matches are always included; RRF orders
-  the union.
+- **No relevance threshold.** The semantic channel proposes a bounded number of best
+  documents (top 5); keyword/thesaurus matches are always included; RRF orders the union.
+  Only a *noise floor* of 0.5 is applied (stage 7): golden-set recall/MRR are unchanged up to
+  0.55 and collapse at 0.6, while at 0.5 name-like queries ("NevisWealth", "Jonh") no longer
+  drag in unrelated documents.
 - **Weighted RRF (added in stage 6):** keyword matches weigh 2×, semantic 1×. With equal
   weights the semantic channel's noisy top hit (a driving licence for *"address proof"*)
   tied with exact thesaurus matches; queries that share no words with any document are

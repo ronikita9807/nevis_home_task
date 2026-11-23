@@ -8,6 +8,8 @@ from app.search.ranking import (
     EXACT_SCORE,
     PREFIX_SCORE,
     SUBSTRING_SCORE,
+    edit_distance,
+    is_typo_of,
     rank_clients,
 )
 
@@ -51,6 +53,35 @@ def test_rank_clients_typo_only_match_scores_below_substring() -> None:
     [ranked] = rank_clients("jonh", [_candidate(similarity=0.4)])
 
     assert 0 < ranked.score < SUBSTRING_SCORE
+
+
+def test_rank_clients_fragment_of_a_longer_word_is_not_a_typo() -> None:
+    wealthy = _candidate("Liam", "Stone", "liam@law.ie", "Passing wealth to children", 0.42)
+
+    assert rank_clients("neviswealth", [wealthy]) == []
+
+
+@pytest.mark.parametrize(
+    ("word", "text", "expected"),
+    [
+        ("jonh", "John", True),
+        ("cartre", "emily carter", True),
+        ("mueller", "Müller", True),
+        ("investr", "growth investor", True),
+        ("neviswealth", "passing wealth to his children", False),
+        ("smith", "john", False),
+    ],
+)
+def test_is_typo_of(word: str, text: str, expected: bool) -> None:
+    assert is_typo_of(word, text.lower()) is expected
+
+
+@pytest.mark.parametrize(
+    ("a", "b", "distance"),
+    [("john", "john", 0), ("jonh", "john", 1), ("patell", "patel", 1), ("abc", "", 3)],
+)
+def test_edit_distance(a: str, b: str, distance: int) -> None:
+    assert edit_distance(a, b) == distance
 
 
 def test_rank_clients_orders_exact_before_substring_and_reports_matched_fields() -> None:

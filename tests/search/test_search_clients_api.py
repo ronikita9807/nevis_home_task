@@ -45,6 +45,21 @@ def _emails(hits: list[Any]) -> list[str]:
     return [hit["client"]["email"] for hit in hits if hit["type"] == "client"]
 
 
+async def test_search_company_name_ignores_fragment_matches(seeded: AsyncClient) -> None:
+    await seeded.post(
+        "/clients",
+        json={
+            "first_name": "Liam",
+            "last_name": "Stone",
+            "email": "liam@law.ie",
+            "description": "Focused on passing wealth to his children",
+        },
+        headers=as_advisor(ADVISOR_A),
+    )
+
+    assert _emails(await _search(seeded, "NevisWealth")) == ["john.doe@neviswealth.com"]
+
+
 async def test_search_company_name_finds_client_by_email_domain(seeded: AsyncClient) -> None:
     hits = await _search(seeded, "NevisWealth")
 
