@@ -1,6 +1,74 @@
 [project]
 name = "nevis-home-task"
 version = "0.1.0"
-description = "Add your description here"
+description = "Search API across clients and their documents for wealth advisors"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.165.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=2.4.1",
+    "pyright>=1.1.414",
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+    "ruff>=0.17.6",
+]
+
+[tool.uv]
+package = false
+
+# --- Lint & format -----------------------------------------------------------
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",  # pycodestyle
+    "F",       # pyflakes
+    "I",       # isort
+    "N",       # pep8-naming
+    "UP",      # pyupgrade
+    "B",       # bugbear
+    "C4",      # comprehensions
+    "SIM",     # simplify
+    "RET",     # return
+    "PT",      # pytest style
+    "ASYNC",   # async pitfalls
+    "S",       # bandit (security)
+    "RUF",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # assert is the point of a test
+
+# --- Type checking -----------------------------------------------------------
+
+[tool.pyright]
+pythonVersion = "3.13"
+include = ["app", "tests"]
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["app", "tests"]
+
+# --- Tests -------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+addopts = "-ra --strict-markers"
+markers = [
+    "semantic: tests that run the real embedding model (slower)",
+]
