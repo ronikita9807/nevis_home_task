@@ -21,10 +21,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.documents.domain import EMBEDDING_DIMENSION
 from app.shared.db import Base
 
-# English stemming: the client base is UK/US (see docs/embedding-experiment.md, PLAN §7.1).
+# English stemming: the client base is UK/US (an assumption, see FastEmbedEmbedder).
+# Multilingual search would switch this to 'simple' (new migration of the generated column).
+FTS_CONFIG = "english"
 SEARCH_TSV_EXPRESSION = (
-    "setweight(to_tsvector('english', title), 'A') || "
-    "setweight(to_tsvector('english', content), 'B')"
+    f"setweight(to_tsvector('{FTS_CONFIG}', title), 'A') || "
+    f"setweight(to_tsvector('{FTS_CONFIG}', content), 'B')"
 )
 
 
