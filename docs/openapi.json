@@ -215,7 +215,7 @@
           "documents"
         ],
         "summary": "Add a document to a client",
-        "description": "Store a document for one of the calling advisor's clients and index it for search.\n\nThe content is split into chunks and embedded synchronously, so the document is\nsearchable as soon as this returns. 404 if the client does not exist or belongs to\nanother advisor.",
+        "description": "Store a document for one of the calling advisor's clients and index it for search.\n\nThe content is split into chunks and embedded synchronously, so the document is\nsearchable as soon as this returns. 404 if the client does not exist or belongs to\nanother advisor. Not idempotent: retrying the request stores a second document.",
         "operationId": "create_document_clients__client_id__documents_post",
         "security": [
           {

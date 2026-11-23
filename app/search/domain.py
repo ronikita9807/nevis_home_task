@@ -24,6 +24,7 @@ FUZZY_THRESHOLD = 0.35
 # "Raj Patel") reach at most 0.45 similarity, while meaning queries put the right client
 # first at 0.50-0.65 but often with a runner-up close behind. Hence a floor against noise and
 # a band that keeps only clients almost as close as the best one.
+# Known limitation: a short, loosely related description can still pass the floor.
 CLIENT_SEMANTIC_FLOOR = 0.48
 CLIENT_SEMANTIC_BAND = 0.03
 CLIENT_SEMANTIC_TOP = 3
