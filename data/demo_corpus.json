@@ -1,0 +1,206 @@
+{
+  "advisors": [
+    {"key": "alice", "id": "a1a1a1a1-0000-4000-8000-000000000001", "name": "Alice (demo advisor)"},
+    {"key": "bob", "id": "b2b2b2b2-0000-4000-8000-000000000002", "name": "Bob (demo advisor)"}
+  ],
+  "clients": [
+    {
+      "key": "john_doe_alice",
+      "advisor": "alice",
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john.doe@neviswealth.com",
+      "description": "Senior software engineer, 41, married with two children. Long-term growth investor, interested in sustainable funds.",
+      "social_links": ["https://www.linkedin.com/in/john-doe-example"],
+      "documents": [
+        {
+          "key": "john_utility_bill",
+          "title": "British Gas statement — March 2024",
+          "content": "British Gas energy statement for the period 1 February to 29 February 2024. Account holder: Mr John Doe. Supply point: 14 Elm Road, Richmond, London TW9 2AB. Electricity used: 312 kWh; gas used: 1,104 kWh. Amount due: £187.42, collected by Direct Debit on 15 March 2024."
+        },
+        {
+          "key": "john_passport",
+          "title": "Passport copy",
+          "content": "Certified copy of United Kingdom passport. Surname: DOE. Given names: JOHN MICHAEL. Nationality: British citizen. Date of birth: 12 May 1983. Passport number: 533419872. Date of expiry: 03 August 2031. Copy certified as a true likeness by a solicitor on 2 April 2024."
+        },
+        {
+          "key": "john_pension",
+          "title": "SIPP annual statement 2023/24",
+          "content": "Self-invested personal pension annual statement for the tax year ending 5 April 2024. Plan value: £286,450. Contributions this year: £24,000 including tax relief at source. Selected retirement age: 60. Projected fund at that age assuming 5% annual growth: £812,000. Current allocation: 80% global equities, 20% bonds."
+        },
+        {
+          "key": "john_esg_note",
+          "title": "Client preferences note",
+          "content": "John asked to exclude tobacco, thermal coal and controversial weapons from the portfolio. He prefers funds with strong environmental and social governance ratings and is happy to accept slightly higher fees for impact-focused strategies. To be reflected in the next rebalancing."
+        },
+        {
+          "key": "john_annual_review",
+          "title": "Annual review — notes",
+          "content": "Meeting held on 18 June 2024 with John and his wife Sarah. Agenda: performance over the last twelve months, changes in circumstances, goals for the coming year. Portfolio returned 9.8% against a benchmark of 8.9%. John received a promotion and a salary increase of about 15%, so monthly contributions can rise from £1,500 to £2,000. The couple still plan to pay for university for both children from 2034 onwards; we agreed to open Junior ISAs and to review education funding separately. Sarah asked about life cover given the larger mortgage; action for the advisor: obtain quotes for a joint term policy. Attitude to risk was reassessed with the questionnaire and remains at level 6 of 7. No change to the retirement target age of 60. Follow-up actions: increase the monthly contribution from July, open two Junior ISAs, request life cover quotes, send an updated cash-flow forecast by the end of July. Next review scheduled for June 2025. Sarah also mentioned that her parents may gift them money towards the house extension next year; we will document the origin of any such gift when it arrives. John confirmed he is comfortable with the current allocation and does not want to hold individual stocks."
+        }
+      ]
+    },
+    {
+      "key": "emily_carter",
+      "advisor": "alice",
+      "first_name": "Emily",
+      "last_name": "Carter",
+      "email": "emily.carter@carterdesign.co.uk",
+      "description": "Founder of a design agency, recently sold her business. Cautious investor focused on capital preservation.",
+      "social_links": [],
+      "documents": [
+        {
+          "key": "emily_business_sale",
+          "title": "Completion statement — sale of Carter Design Ltd",
+          "content": "Completion statement for the sale of the entire share capital of Carter Design Ltd to Brightline Group plc, completed on 30 September 2024. Total consideration: £3,200,000, of which £2,750,000 paid in cash at completion and £450,000 deferred for 18 months. Net proceeds after fees received into the seller's Barclays account on 2 October 2024."
+        },
+        {
+          "key": "emily_risk_profile",
+          "title": "Attitude to risk questionnaire",
+          "content": "Questionnaire completed on 14 October 2024. Score: 3 out of 7 (cautious). The client would be uncomfortable seeing the value of her investments fall by more than 10% in a single year. Investment horizon: 10 years. Capacity for loss: high, as essential spending is covered by other assets."
+        },
+        {
+          "key": "emily_council_tax",
+          "title": "Council tax bill 2024/25",
+          "content": "London Borough of Camden council tax bill for 1 April 2024 to 31 March 2025. Liable person: Ms Emily Carter. Property: Flat 3, 22 Gloucester Crescent, London NW1 7DS. Valuation band: E. Annual charge: £2,236.90, payable in ten monthly instalments."
+        },
+        {
+          "key": "emily_suitability",
+          "title": "Suitability report",
+          "content": "Following our meetings in October we recommend placing £2,000,000 into a diversified portfolio with 35% equities and 65% bonds and cash, consistent with your cautious profile and ten-year horizon. We considered keeping the money on deposit but concluded that inflation would erode its real value. The recommended platform offers lower charges than your existing provider."
+        }
+      ]
+    },
+    {
+      "key": "raj_patel",
+      "advisor": "alice",
+      "first_name": "Raj",
+      "last_name": "Patel",
+      "email": "raj.patel@gmail.com",
+      "description": "Consultant surgeon at an NHS trust, high earner, buying a second home.",
+      "social_links": [],
+      "documents": [
+        {
+          "key": "raj_p60",
+          "title": "P60 end of year certificate 2023/24",
+          "content": "P60 for the tax year to 5 April 2024. Employer: Guy's and St Thomas' NHS Foundation Trust. Employee: Raj Patel. Pay in this employment: £148,920. Tax deducted: £50,114. National Insurance contributions: £7,318. Final tax code: K475."
+        },
+        {
+          "key": "raj_mortgage_offer",
+          "title": "Mortgage offer — Nationwide",
+          "content": "Nationwide Building Society offer of a loan of £650,000 secured on 7 Harbour View, Brighton BN2 5TT. Purchase price £950,000. Five-year fixed rate of 4.29%, then reverting to the base mortgage rate. Term: 25 years. Monthly repayment during the fixed period: £3,528. Offer valid until 31 January 2025."
+        },
+        {
+          "key": "raj_driving_licence",
+          "title": "Driving licence copy",
+          "content": "Copy of a UK photocard driving licence. Name: Raj Patel. Date of birth: 22/09/1979. Licence number: PATEL709229R99AB. Valid from 15/03/2020 to 14/03/2030. Categories: B, AM, Q."
+        }
+      ]
+    },
+    {
+      "key": "sophie_muller",
+      "advisor": "alice",
+      "first_name": "Sophie",
+      "last_name": "Müller",
+      "email": "sophie.mueller@outlook.com",
+      "description": "German national living in London, works in banking. Saving towards early retirement.",
+      "social_links": ["https://www.linkedin.com/in/sophie-mueller-example"],
+      "documents": [
+        {
+          "key": "sophie_isa",
+          "title": "Stocks and Shares ISA statement",
+          "content": "Annual statement for the Vanguard Stocks and Shares ISA, 6 April 2023 to 5 April 2024. Opening value £61,200; subscriptions £20,000; closing value £88,940. Holdings: LifeStrategy 80% Equity fund. No income tax or capital gains tax is payable on growth or withdrawals from this account."
+        },
+        {
+          "key": "sophie_tenancy",
+          "title": "Assured shorthold tenancy agreement",
+          "content": "Agreement between landlord Mr Peter Hughes and tenant Ms Sophie Müller for the property at 51 Albion Road, London N16 9PP, starting 1 May 2024 for a fixed term of 12 months. Monthly rent: £2,350. Deposit of £2,700 protected with the Deposit Protection Service."
+        }
+      ]
+    },
+    {
+      "key": "liam_obrien",
+      "advisor": "alice",
+      "first_name": "Liam",
+      "last_name": "O'Brien",
+      "email": "liam.obrien@obrienlaw.ie",
+      "description": "Partner at a law firm, widower, focused on passing wealth to his children.",
+      "social_links": [],
+      "documents": [
+        {
+          "key": "liam_will",
+          "title": "Last will and testament",
+          "content": "This is the last will of Liam O'Brien. I appoint my daughter Aoife and my solicitor as executors. I leave my home in Surrey to my two children in equal shares and £50,000 to Cancer Research UK. The residue of my estate is to be held in a discretionary trust for my grandchildren."
+        },
+        {
+          "key": "liam_lpa",
+          "title": "Lasting power of attorney — property and financial affairs",
+          "content": "Registered with the Office of the Public Guardian on 9 January 2024. Donor: Liam O'Brien. Attorneys: Aoife O'Brien and Ciaran O'Brien, appointed jointly and severally. The attorneys may make decisions about the donor's bank accounts, investments and property if he loses mental capacity."
+        },
+        {
+          "key": "liam_life_policy",
+          "title": "Whole of life policy schedule",
+          "content": "Legal & General whole of life policy written in trust. Life insured: Liam O'Brien. Sum assured: £400,000 payable on death to the trustees, intended to cover the expected inheritance tax liability. Monthly premium: £612. Policy start date: 1 March 2019."
+        }
+      ]
+    },
+    {
+      "key": "jose_garcia",
+      "advisor": "alice",
+      "first_name": "José",
+      "last_name": "García",
+      "email": "jose.garcia@garcia-family.es",
+      "description": "Spanish entrepreneur relocating to the UK; received an inheritance from his father.",
+      "social_links": [],
+      "documents": [
+        {
+          "key": "jose_inheritance",
+          "title": "Letter from the estate executors",
+          "content": "Letter from the executors of the late Antonio García confirming that, following the completion of probate, José García received €1,150,000 as his share of the estate. The amount was transferred from the estate account at Banco Santander to his personal account on 12 July 2024."
+        },
+        {
+          "key": "jose_bank_statement",
+          "title": "HSBC current account statement — July 2024",
+          "content": "HSBC Advance account statement for 1 July to 31 July 2024. Account holder: José García. Opening balance £8,412.10. Credits: transfer from Banco Santander £981,300.00; salary £6,200.00. Debits: rent £3,100.00; card payments £2,145.37. Closing balance £990,666.73."
+        }
+      ]
+    },
+    {
+      "key": "john_doe_bob",
+      "advisor": "bob",
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john.doe@neviswealth.com",
+      "description": "Same person as Alice's client, advised separately on his company pension scheme.",
+      "social_links": [],
+      "documents": [
+        {
+          "key": "john_bob_workplace_pension",
+          "title": "Workplace pension transfer request",
+          "content": "Request to consolidate John Doe's two previous workplace pensions (Aviva, £42,300 and Scottish Widows, £18,750) into his current employer's scheme. Transfer value statements attached. No safeguarded benefits; no exit penalties apply."
+        }
+      ]
+    },
+    {
+      "key": "hannah_lee",
+      "advisor": "bob",
+      "first_name": "Hannah",
+      "last_name": "Lee",
+      "email": "hannah.lee@leeconsulting.com",
+      "description": "Independent consultant, self-employed, paying for her children's private school.",
+      "social_links": [],
+      "documents": [
+        {
+          "key": "hannah_sa302",
+          "title": "SA302 tax calculation 2023/24",
+          "content": "HMRC SA302 tax calculation for the year ended 5 April 2024. Name: Hannah Lee. Self-employment profit: £118,400. Total income received: £121,950. Income tax due: £38,210. Class 4 National Insurance: £4,866. Balancing payment due 31 January 2025."
+        },
+        {
+          "key": "hannah_school_fees",
+          "title": "School fees invoice — autumn term",
+          "content": "Invoice from Highgate School for the autumn term 2024 for two pupils. Tuition: £11,840 per pupil per term; lunches and trips: £620. Total payable: £24,300 by 1 September 2024. Fees include VAT at 20% from January 2025 onwards."
+        }
+      ]
+    }
+  ]
+}
